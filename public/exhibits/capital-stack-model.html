@@ -1,0 +1,2746 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Capital Stack Model — Construction Financing Alternatives</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=Source+Serif+4:opsz,wght@8..60,600;8..60,700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --navy:#0f2c47; --navy-2:#17405f; --slate:#33495c; --ink:#12212e; --ink-2:#32485c;
+  --muted:#4a5e6e; --muted-2:#5f7280;
+  --line:#dde4ea; --line-2:#edf1f5; --bg:#fff; --page-bg:#f3f6f8; --panel:#f7f9fb; --calc:#eef3f7;
+  --stack-1:#0f2c47; --stack-2:#2e6390; --stack-3:#4a7799; --stack-4:#7ea6c4;
+  --stack-5:#a9c7dd; --stack-6:#d3e3ef;
+  /* interpolated steps on the same ramp — nine possible bands do not fit a six-step scale */
+  --stack-2b:#3c6d94; --stack-3b:#6e98b7; --stack-4b:#93b6d0;
+  --green:#276b4d; --green-bg:#f0f7f3; --amber:#8a6414; --amber-bg:#fdf8ec;
+  --red:#9b3535; --red-bg:#fdf3f3;
+  --sans:'IBM Plex Sans',-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;
+  --serif:'Source Serif 4',Georgia,'Times New Roman',serif;
+  --mono:ui-monospace,"SF Mono","JetBrains Mono",Menlo,Consolas,monospace;
+  --shadow:0 6px 24px rgba(15,44,71,.13);
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{background:var(--page-bg);color:var(--ink);font-family:var(--sans);font-size:13px;line-height:1.45;-webkit-font-smoothing:antialiased}
+h1,h2,h3,h4{margin:0;font-weight:600}
+table{border-collapse:collapse;width:100%}
+button{font-family:inherit;font-size:inherit;color:inherit;cursor:pointer}
+input,select{font-family:inherit}
+.num,.mono{font-family:var(--mono);font-variant-numeric:tabular-nums;letter-spacing:-.01em}
+.eyebrow{font-size:9px;letter-spacing:.17em;text-transform:uppercase;color:var(--muted);font-weight:700}
+.dim{color:var(--muted)}
+.shell{max-width:1560px;margin:0 auto;padding:0 26px 64px}
+
+/* ============ MASTHEAD ============ */
+.masthead{display:flex;justify-content:space-between;align-items:flex-start;gap:28px;padding:20px 0 14px;border-bottom:2px solid var(--navy)}
+.masthead h1{font-family:var(--serif);font-weight:700;font-size:24px;line-height:1.1;letter-spacing:-.015em;color:var(--navy);margin:5px 0 3px}
+.mast-sub{font-size:11.5px;color:var(--ink-2)}
+.mast-metrics{display:flex;gap:0;flex:0 0 auto;align-items:stretch}
+.mast-m{padding:0 20px;border-left:1px solid var(--line);text-align:right}
+.mast-m:first-child{border-left:0}
+.mast-m .k{font-size:8.5px;letter-spacing:.15em;text-transform:uppercase;color:var(--muted);font-weight:700}
+.mast-m .v{font-family:var(--serif);font-size:24px;font-weight:700;color:var(--navy);letter-spacing:-.02em;line-height:1.2;font-variant-numeric:tabular-nums}
+.mast-m.sm .v{font-size:15px;line-height:1.6}
+
+/* ============ TOOLBAR ============ */
+.toolbar{display:flex;align-items:center;flex-wrap:nowrap;gap:8px;width:100%;min-width:0;padding:9px 0;border-bottom:1px solid var(--line);position:sticky;top:0;background:rgba(255,255,255,.97);box-shadow:0 2px 8px rgba(15,44,71,.04);z-index:40}
+.toolbar .btn,.toolbar .status-pill,.mode-switch .btn{height:38px;display:inline-flex;align-items:center;justify-content:center}
+.btn{background:#fff;border:1px solid var(--line);padding:5px 11px;font-size:11px;font-weight:600;color:var(--ink-2);border-radius:3px;white-space:nowrap;letter-spacing:.01em}
+.btn:hover{border-color:var(--slate);color:var(--navy);background:var(--panel)}
+.btn:focus-visible,input:focus-visible,select:focus-visible,a:focus-visible{outline:2px solid var(--stack-2);outline-offset:1px}
+.btn.primary{background:var(--navy);border-color:var(--navy);color:#fff}
+.btn.primary:hover{background:var(--navy-2);color:#fff}
+.btn.on{background:var(--navy);border-color:var(--navy);color:#fff}
+.btn.icon{padding:5px 9px;font-size:14px;line-height:1}
+.btn[disabled]{opacity:.35;cursor:default}
+.mode-switch{display:inline-flex;align-items:stretch;flex:0 0 auto;margin-left:10px;border:1px solid var(--line);border-radius:3px;overflow:hidden;white-space:nowrap}
+.mode-switch .btn{margin:0;border:0;border-radius:0}
+.mode-switch .btn+.btn{border-left:1px solid var(--line)}
+.toolbar-actions{display:flex;align-items:center;justify-content:flex-end;flex-wrap:nowrap;gap:6px;margin-left:auto;margin-right:10px;min-width:0;max-width:calc(100% - 240px)}
+.save-ind{font-size:10.5px;color:var(--muted);max-width:130px;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-align:right;flex:0 1 auto}
+.save-ind.on{color:var(--green)}
+.lbl-short{display:none}
+
+/* menu */
+.menu{position:relative;flex:0 0 auto}
+.menu-pop{position:absolute;top:calc(100% + 5px);right:0;background:#fff;border:1px solid var(--line);box-shadow:var(--shadow);z-index:60;min-width:196px;border-radius:3px;padding:4px 0}
+.menu-pop button{display:block;width:100%;text-align:left;background:none;border:0;padding:6px 13px;font-size:11.5px;color:var(--ink-2)}
+.menu-pop button:hover{background:var(--panel);color:var(--navy)}
+.menu-pop .sep{height:1px;background:var(--line-2);margin:4px 0}
+.menu-pop .hd{font-size:8.5px;letter-spacing:.13em;text-transform:uppercase;color:var(--muted-2);font-weight:700;padding:6px 13px 3px}
+.menu-pop button .ck{color:var(--green);font-weight:700}
+
+/* ============ STATUS ============ */
+.statuswrap{position:relative;flex:0 1 auto;min-width:0}
+.status-pill{display:flex;align-items:center;gap:7px;border:1px solid var(--line);border-radius:3px;padding:4px 10px;background:#fff;font-size:11px;flex:0 1 auto;max-width:262px;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.status-pill .s{display:flex;align-items:center;gap:4px;font-weight:600;overflow:hidden;text-overflow:ellipsis}
+.s.ok{color:var(--green)} .s.warn{color:var(--amber)} .s.err{color:var(--red)}
+.s.conf{color:var(--muted);font-weight:600;flex:0 1 auto}
+.status-panel{position:absolute;top:calc(100% + 6px);right:0;width:520px;max-width:88vw;background:#fff;border:1px solid var(--line);box-shadow:var(--shadow);z-index:60;border-radius:3px;max-height:440px;overflow:auto}
+.status-panel h4{font-size:9px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);padding:9px 13px 5px;border-bottom:1px solid var(--line-2)}
+.flagrow{display:flex;gap:9px;padding:7px 13px;font-size:11.5px;border-bottom:1px solid var(--line-2);line-height:1.45}
+.flagrow .fl{flex:0 0 auto;font-weight:700;font-size:9.5px;letter-spacing:.06em;text-transform:uppercase;padding-top:1px}
+.flagrow.e{background:var(--red-bg)} .flagrow.e .fl{color:var(--red)}
+.flagrow.w{background:var(--amber-bg)} .flagrow.w .fl{color:var(--amber)}
+.flagrow.i .fl{color:var(--muted)}
+.flagrow.ok .fl{color:var(--green)}
+
+/* ============ WORKSPACE ============ */
+.workspace{display:grid;grid-template-columns:196px minmax(0,1fr) 268px;gap:0;margin-top:18px;background:#fff;border:1px solid var(--line);border-radius:3px;box-shadow:0 2px 8px rgba(15,44,71,.05);overflow:hidden}
+.nav{background:var(--panel);border-right:1px solid var(--line);padding:10px 0}
+.nav-grp{font-size:8.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted-2);font-weight:700;padding:11px 14px 5px}
+.nav a,.nav button{display:flex;justify-content:space-between;align-items:center;gap:6px;width:100%;padding:7px 14px;font-size:12px;font-family:inherit;color:var(--ink-2);text-align:left;background:none;border:0;border-left:2px solid transparent;text-decoration:none;cursor:pointer}
+.nav a:hover,.nav button:hover{background:#fff;color:var(--navy)}
+.nav a.on,.nav button.on{background:#fff;color:var(--navy);font-weight:600;border-left-color:var(--navy)}
+.nav a .badge,.nav button .badge{font-family:var(--sans);font-variant-numeric:tabular-nums;font-size:9.5px;color:var(--muted-2)}
+.nav a.on .badge,.nav button.on .badge{color:var(--stack-2)}
+.editor{padding:20px 24px;min-width:0}
+.summary{background:var(--panel);border-left:1px solid var(--line);padding:16px 15px}
+.summary-inner{position:sticky;top:60px}
+.sum-row{display:flex;justify-content:space-between;gap:8px;padding:5px 0;border-bottom:1px solid var(--line-2);font-size:11.5px}
+.sum-row .k{color:var(--muted)}
+.sum-row .v{font-family:var(--serif);font-weight:700;color:var(--navy);font-variant-numeric:tabular-nums}
+.sum-row.hd{border-bottom:1px solid var(--slate);padding-bottom:6px;margin-bottom:2px}
+.sum-row.hd .k{font-size:9px;letter-spacing:.14em;text-transform:uppercase;color:var(--navy);font-weight:700}
+.sum-row.big{padding:8px 0}
+.sum-row.big .v{font-size:15px}
+.sum-row .v.ok{color:var(--green)} .sum-row .v.bad{color:var(--red)}
+
+/* ============ EDITOR CONTENT ============ */
+.ed-head{display:flex;justify-content:space-between;align-items:flex-start;gap:16px;margin-bottom:4px}
+.ed-head h2{font-size:16px;color:var(--navy);letter-spacing:-.01em}
+.ed-head p{margin:3px 0 0;font-size:11.5px;color:var(--muted);max-width:560px}
+.block{margin-top:22px}
+.block > h3{font-size:9px;letter-spacing:.15em;text-transform:uppercase;color:var(--navy);font-weight:700;padding-bottom:5px;border-bottom:1px solid var(--line);margin-bottom:12px;display:flex;justify-content:space-between;align-items:baseline}
+.fgrid{display:grid;gap:13px 18px;grid-template-columns:repeat(3,minmax(0,1fr))}
+.fgrid.c2{grid-template-columns:repeat(2,minmax(0,1fr))}
+.fgrid.c4{grid-template-columns:repeat(4,minmax(0,1fr))}
+.f{display:flex;flex-direction:column;gap:4px;min-width:0}
+.f > label{font-size:10px;font-weight:600;color:var(--ink-2);display:flex;align-items:center;gap:4px;letter-spacing:.01em}
+.f .help{font-size:10px;color:var(--muted-2);font-family:var(--mono)}
+.ip{display:flex;align-items:stretch;border:1px solid var(--line);border-radius:3px;background:#fff;transition:border-color .12s,box-shadow .12s}
+.ip:focus-within{border-color:var(--stack-2);box-shadow:0 0 0 3px rgba(46,99,144,.11)}
+.ip input,.ip select{border:0;outline:0;background:transparent;padding:6px 8px;width:100%;min-width:0;font-family:var(--sans);font-size:13px;font-variant-numeric:tabular-nums;text-align:right;color:var(--ink)}
+.ip.text input,.ip select{font-family:var(--sans);text-align:left;font-size:12.5px}
+.ip select{cursor:pointer;padding-right:4px}
+.ip .af{font-size:11px;color:var(--muted);background:var(--line-2);padding:6px 8px;display:flex;align-items:center;font-weight:600;flex:0 0 auto}
+.ip .af.pre{border-right:1px solid var(--line)}
+.ip .af.suf{border-left:1px solid var(--line)}
+.ip .af.clr{background:var(--line-2);border-top:0;border-right:0;border-bottom:0;font-size:13px;line-height:1;color:var(--muted);padding:6px 9px}
+.ip .af.clr:hover{color:var(--navy);background:#e4ebf1}
+.ip output{display:block;width:100%;min-width:0;padding:6px 8px;font-family:var(--sans);font-size:13px;font-variant-numeric:tabular-nums;text-align:right;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;cursor:default}
+.ip output:empty::after{content:"\00a0"}
+.ip.calc{background:var(--calc);border-style:solid;border-color:var(--line)}
+.ip.calc input,.ip.calc output{color:var(--slate);cursor:default}
+.ip.calc .af{background:#e4ebf1}
+.ip.err{border-color:var(--red)} .ip.err .af{background:var(--red-bg);color:var(--red)}
+.f.calc-f > label::after{content:"CALCULATED";font-size:8px;letter-spacing:.1em;color:var(--muted-2);font-weight:700;margin-left:auto}
+input[type=range]{width:100%;accent-color:var(--navy);margin:1px 0 0;height:14px}
+.radio{display:flex;border:1px solid var(--line);border-radius:3px;overflow:hidden}
+.radio label{flex:1;text-align:center;font-size:10.5px;padding:6px 4px;font-weight:600;color:var(--muted);background:#fff;border-right:1px solid var(--line);cursor:pointer}
+.radio label:last-child{border-right:0}
+.radio label:has(input:checked){background:var(--navy);color:#fff}
+.radio label:has(input:focus-visible){outline:2px solid var(--stack-2);outline-offset:-2px}
+.radio input{position:absolute;opacity:0;pointer-events:none}
+.chk{display:flex;align-items:center;gap:7px;font-size:11.5px;color:var(--ink-2);cursor:pointer;padding:6px 0}
+.chk input{accent-color:var(--navy);width:14px;height:14px;flex:0 0 auto}
+
+details.adv{margin-top:20px;border:1px solid var(--line);border-radius:3px;background:var(--panel)}
+details.adv > summary{padding:9px 13px;font-size:10px;letter-spacing:.13em;text-transform:uppercase;font-weight:700;color:var(--slate);cursor:pointer;list-style:none;display:flex;align-items:center;gap:7px}
+details.adv > summary::-webkit-details-marker{display:none}
+details.adv > summary::before{content:"+";font-family:var(--mono);font-size:13px;color:var(--muted)}
+details.adv[open] > summary::before{content:"−"}
+details.adv[open] > summary{border-bottom:1px solid var(--line)}
+details.adv .adv-body{padding:15px 13px;background:#fff}
+
+/* empty states */
+.empty{border:1px dashed var(--line);border-radius:3px;padding:16px;text-align:center;background:var(--panel)}
+.empty p{margin:0 0 10px;font-size:11.5px;color:var(--muted)}
+.empty .lbl{font-size:12.5px;color:var(--slate);font-weight:600;margin-bottom:2px}
+
+/* editable row lists */
+.rows{border:1px solid var(--line);border-radius:3px;overflow:hidden}
+.rowh,.rowr,.rowf{display:grid;grid-template-columns:minmax(0,1fr) 150px 130px 92px 30px;align-items:center}
+.rows.simple .rowh,.rows.simple .rowr,.rows.simple .rowf{grid-template-columns:minmax(0,1fr) 130px 92px 30px}
+.rows.osrc .rowh,.rows.osrc .rowr,.rows.osrc .rowf{grid-template-columns:minmax(0,1fr) 158px 116px 96px 76px 30px}
+.rowh{background:var(--panel);border-bottom:1px solid var(--line)}
+.rowh div{font-size:8.5px;letter-spacing:.11em;text-transform:uppercase;color:var(--muted);font-weight:700;padding:7px 9px}
+.rowr{border-bottom:1px solid var(--line-2)}
+.rowr:hover{background:var(--panel)}
+.rowr input,.rowr select{border:0;background:transparent;width:100%;padding:7px 9px;font-size:12px;outline:0;min-width:0}
+.rowr input.amt{font-family:var(--sans);text-align:right;font-variant-numeric:tabular-nums}
+.rowr:focus-within{background:#f2f7fb}
+.rowf{background:var(--panel);border-top:1px solid var(--slate)}
+.rowf div{padding:7px 9px;font-size:12px;font-weight:700;color:var(--navy);font-family:var(--serif);font-variant-numeric:tabular-nums;text-align:right}
+.rowf div:first-child{font-family:var(--sans);text-align:left}
+.pctcell{padding:7px 9px;font-family:var(--sans);font-variant-numeric:tabular-nums;font-size:11.5px;text-align:right;color:var(--muted)}
+.yn{font-size:10px;letter-spacing:.06em;text-transform:uppercase;font-weight:700;background:none;border:1px solid transparent;padding:3px 8px;border-radius:3px;margin:0 6px}
+.yn.y{color:var(--green);background:var(--green-bg);border-color:#cfe4d9}
+.yn.n{color:var(--muted);background:var(--line-2);border-color:var(--line)}
+.del{background:none;border:0;color:var(--muted-2);font-size:15px;line-height:1;padding:4px}
+.del:hover{color:var(--red)}
+
+/* ============ ANALYSIS CANVAS ============ */
+.analysis-canvas{background:#fff;border:1px solid var(--line);border-radius:3px;box-shadow:0 2px 8px rgba(15,44,71,.05);margin-top:18px;padding:26px 28px}
+.analysis-canvas .section:first-child,.analysis-canvas > #presentOpen + .section{margin-top:0}
+.section{margin-top:38px}
+.capital-stack-analysis-section{background:#f2f6f9;border:1px solid #dce5ec;border-radius:6px;padding:24px 26px 28px}
+.capital-stack-analysis-section .scard{background:#fff}
+.sec-head{display:flex;justify-content:space-between;align-items:baseline;gap:16px;border-bottom:1px solid var(--navy);padding-bottom:6px;margin-bottom:14px}
+.sec-head h2{font-family:var(--serif);font-size:19px;font-weight:700;text-transform:none;letter-spacing:-.005em;color:var(--navy)}
+.sec-head .hint{font-size:10.5px;color:var(--muted)}
+
+.cmp{font-size:12px}
+.cmp th{font-size:9px;letter-spacing:.11em;text-transform:uppercase;color:var(--muted);font-weight:700;text-align:right;padding:7px 12px;border-bottom:1px solid var(--line)}
+.cmp th:first-child{text-align:left}
+.cmp td{padding:7px 12px;text-align:right;font-family:var(--sans);font-variant-numeric:tabular-nums;border-bottom:1px solid var(--line-2);white-space:nowrap}
+.cmp td:first-child{text-align:left;font-family:var(--sans);color:var(--ink-2)}
+.cmp tr:hover td{background:var(--panel)}
+.cmp td.best{background:var(--green-bg);color:var(--green);font-weight:700;font-family:var(--serif)}
+.cmp td.bad{color:var(--red);font-weight:700;font-family:var(--serif)}
+.cmp tr.grp td{background:var(--panel);font-family:var(--sans);font-size:8.5px;letter-spacing:.13em;text-transform:uppercase;font-weight:700;color:var(--navy)}
+.footnote{font-size:10px;color:var(--muted);margin-top:7px;line-height:1.5}
+/* horizontal overflow is contained inside the table, not pushed onto the page */
+.tscroll{overflow-x:auto;max-width:100%}
+.tscroll .cmp th:first-child,.tscroll .cmp td:first-child{position:sticky;left:0;z-index:2;background:#fff;border-right:1px solid var(--line-2)}
+.tscroll .cmp tr:hover td:first-child{background:var(--panel)}
+.tscroll .cmp tr.grp td{position:static;background:var(--panel);border-right:0}
+
+.scengrid{display:grid;gap:26px;margin-top:6px}
+.scencol{min-width:0}
+.scard{border:1px solid var(--line);border-top:3px solid var(--navy);border-radius:3px;padding:13px 15px;background:#fff;box-shadow:0 2px 8px rgba(15,44,71,.05)}
+.scard-top{display:flex;justify-content:space-between;align-items:flex-start;gap:10px}
+.scard-top h3{font-family:var(--serif);font-weight:700;font-size:15px;color:var(--navy);letter-spacing:-.01em}
+.scard-top .tag{font-size:9px;letter-spacing:.13em;text-transform:uppercase;color:var(--muted);font-weight:700;margin-top:2px}
+.scard-body{display:grid;grid-template-columns:1fr 1fr;gap:10px 16px;margin-top:12px}
+.sc-item .k{font-size:8.5px;letter-spacing:.11em;text-transform:uppercase;color:var(--muted);font-weight:700}
+.sc-item .v{font-family:var(--serif);font-size:14px;font-weight:700;color:var(--navy);margin-top:1px;font-variant-numeric:tabular-nums}
+.sc-item .s{font-size:10px;color:var(--muted-2)}
+.scard-actions{display:flex;gap:6px;align-items:center}
+
+.metrics{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(92px,100%),1fr));gap:1px;background:var(--line);border:1px solid var(--line);border-radius:3px;overflow:hidden;margin-top:14px}
+.metric{padding:8px 10px;min-width:0;background:#fff}
+.metric .k{font-size:8.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);font-weight:700;display:flex;align-items:center;gap:4px}
+.metric .v{font-family:var(--serif);font-size:20px;font-weight:700;color:var(--navy);margin-top:2px;letter-spacing:-.01em;font-variant-numeric:tabular-nums}
+.metric .s{font-size:9.5px;color:var(--muted-2);margin-top:1px}
+.metric.alert{background:var(--red-bg)} .metric.alert .v{color:var(--red)}
+.metric.good .v{color:var(--green)}
+
+/* capital stack */
+.stackwrap{display:grid;grid-template-columns:40px minmax(0,1fr) 14px 186px;height:452px;position:relative;margin-top:16px}
+.axis{position:relative}
+.axis .t{position:absolute;right:7px;transform:translateY(50%);font-family:var(--sans);font-variant-numeric:tabular-nums;font-size:9.5px;color:var(--muted-2)}
+.bar{position:relative;border-left:1px solid var(--line);border-bottom:1px solid var(--line)}
+.gridline{position:absolute;left:0;right:0;border-top:1px dotted var(--line);pointer-events:none}
+.seg{position:absolute;left:0;right:0;overflow:hidden;display:flex;flex-direction:column;justify-content:center;align-items:center;padding:2px 10px;text-align:center;border-top:1px solid rgba(255,255,255,.5);cursor:default;transition:height .3s cubic-bezier(.4,0,.2,1),bottom .3s cubic-bezier(.4,0,.2,1)}
+.seg:hover{filter:brightness(1.08)}
+.seg .l1{font-size:11px;font-weight:600;letter-spacing:.02em}
+.seg .l2{font-family:var(--serif);font-size:15px;font-weight:700;margin-top:2px;letter-spacing:-.01em;font-variant-numeric:tabular-nums}
+.seg .l3{font-family:var(--sans);font-size:10px;margin-top:1px;font-variant-numeric:tabular-nums}
+.seg.gapseg{background:repeating-linear-gradient(45deg,#fff,#fff 5px,#f7eaea 5px,#f7eaea 10px);border:1px dashed var(--red);color:var(--red)}
+.notes{position:relative;overflow:hidden}
+.note{position:absolute;left:0;width:186px;font-size:10px;line-height:1.4;transition:top .3s cubic-bezier(.4,0,.2,1)}
+.note .nr{font-family:var(--sans);font-variant-numeric:tabular-nums;font-size:9.5px;color:var(--muted-2)}
+.note .nt{font-weight:700;font-size:10.5px;color:var(--navy)}
+.note .nv{font-family:var(--serif);font-size:11px;color:var(--slate);font-weight:700;font-variant-numeric:tabular-nums}
+.note .nd{color:var(--muted);font-size:9.5px}
+.note .swatch{display:inline-block;width:8px;height:8px;margin-right:4px;vertical-align:middle}
+.riskrail{position:absolute;left:-24px;top:0;bottom:0;width:20px;display:flex;flex-direction:column;justify-content:space-between;align-items:center;font-size:8px;letter-spacing:.1em;color:var(--muted-2)}
+.riskrail div{writing-mode:vertical-rl;transform:rotate(180deg);text-transform:uppercase}
+
+/* tables */
+.tbl{font-size:11.5px;margin-top:8px}
+.tbl caption{caption-side:top;text-align:left;font-size:9px;letter-spacing:.14em;text-transform:uppercase;color:var(--navy);font-weight:700;padding:0 0 6px;border-bottom:1px solid var(--navy)}
+.tbl th{font-size:8.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);font-weight:700;text-align:right;padding:6px 9px;border-bottom:1px solid var(--line);white-space:nowrap}
+.tbl th:first-child{text-align:left}
+.tbl td{padding:5px 9px;border-bottom:1px solid var(--line-2);text-align:right;font-family:var(--sans);font-variant-numeric:tabular-nums;white-space:nowrap}
+.tbl td:first-child{text-align:left;font-family:var(--sans);white-space:normal}
+.tbl tr.total td{border-top:1px solid var(--navy);border-bottom:0;font-weight:700;color:var(--navy);font-family:var(--serif)}
+.tbl tr.total td:first-child{font-family:var(--sans)}
+.tbl tr.base{background:var(--panel)} .tbl tr.base td{font-weight:700}
+.tbl tr.over td{background:var(--amber-bg)} .tbl tr.over td:first-child{color:var(--amber);font-weight:700}
+.tbl tr.ok td{color:var(--green);font-weight:700}
+.tbl tr.bad td{color:var(--red);font-weight:700}
+.tbl .dot{display:inline-block;width:8px;height:8px;margin-right:6px;vertical-align:middle}
+.boxnote{border:1px solid var(--line);background:var(--panel);padding:9px 11px;margin-top:9px;font-family:var(--mono);font-size:10px;color:var(--ink-2);line-height:1.65;white-space:pre-wrap;border-radius:3px}
+.subgrid{display:grid;gap:26px;grid-template-columns:1fr 1fr}
+
+/* ============ MODAL ============ */
+.modal-bd{position:fixed;inset:0;background:rgba(15,33,46,.42);z-index:90;display:flex;align-items:center;justify-content:center;padding:20px}
+.modal{background:#fff;border-radius:4px;box-shadow:var(--shadow);width:470px;max-width:100%;max-height:86vh;display:flex;flex-direction:column}
+.modal h3{font-size:14px;color:var(--navy);padding:16px 20px 4px}
+.modal .sub{font-size:11.5px;color:var(--muted);padding:0 20px 12px}
+.modal .mbody{padding:0 20px;overflow:auto}
+.modal .mfoot{display:flex;flex-wrap:wrap;justify-content:flex-end;gap:8px;padding:14px 20px;border-top:1px solid var(--line-2)}
+.save-err{font-size:10.5px;color:var(--red);margin-top:5px}
+.saverow{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid var(--line-2)}
+.saverow:last-child{border-bottom:0}
+.saverow-main{min-width:0}
+.saverow-name{font-size:12.5px;font-weight:600;color:var(--navy);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.saverow-meta{font-size:10.5px;color:var(--muted);margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.saverow-actions{display:flex;gap:5px;flex:0 0 auto}
+.saverow-actions .btn{padding:4px 9px;font-size:10.5px}
+.saverow-actions .btn.icon{padding:4px 7px;font-size:12px}
+.diff{display:grid;grid-template-columns:1fr auto auto auto;gap:5px 10px;font-size:11.5px;align-items:center}
+.diff .lb{color:var(--ink-2)}
+.diff .old{font-family:var(--mono);color:var(--muted);text-decoration:line-through}
+.diff .ar{color:var(--muted-2)}
+.diff .new{font-family:var(--mono);color:var(--navy);font-weight:700}
+
+/* ============ TOOLTIP ============ */
+#tip{position:fixed;z-index:100;background:var(--navy);color:#fff;font-size:10.5px;line-height:1.5;padding:8px 10px;border-radius:3px;max-width:280px;white-space:pre-line;pointer-events:none;opacity:0;transition:opacity .12s;box-shadow:var(--shadow)}
+#tip.on{opacity:1}
+#tip .th{font-weight:700;font-size:11px;display:block;margin-bottom:3px}
+/* scoped to the <i> element it is used on. As a bare class selector this also matched
+   .flagrow.i -- the info-level rows in the status panel -- collapsing each one into a 12px
+   circle and spilling its text across the panel. */
+i.i{display:inline-flex;align-items:center;justify-content:center;width:12px;height:12px;border:1px solid var(--muted-2);border-radius:50%;font-size:8px;color:var(--muted);cursor:help;font-weight:700;font-style:normal;flex:0 0 auto;line-height:1}
+i.i:hover{border-color:var(--navy);color:var(--navy)}
+
+/* ============ MODES ============ */
+body.present .edit-only{display:none !important}
+body.present .workspace{display:none}
+body.present .section:first-of-type,body.present #presentOpen + .section{margin-top:22px}
+.present-only{display:none}
+body.present .present-only{display:block}
+/* framing blocks: deal context above the exhibit, conclusion and open items below */
+.pblock{border:1px solid var(--line);border-radius:3px;background:var(--panel);padding:15px 17px}
+.pblock h2{font-family:var(--serif);font-size:19px;font-weight:700;letter-spacing:-.005em;color:var(--navy);margin:5px 0 2px}
+.pblock .pmeta{font-size:11px;color:var(--muted);font-variant-numeric:tabular-nums}
+.pblock p{margin:9px 0 0;font-size:11.5px;line-height:1.6;color:var(--ink-2);max-width:112ch}
+.pblock ul{margin:6px 0 0;padding-left:17px;font-size:11.5px;line-height:1.6;color:var(--ink-2);max-width:112ch}
+.pblock li{margin-top:3px}
+.pblock .eyebrow{display:block}
+.pblock p + .eyebrow{margin-top:15px}
+.pblock .eyebrow + p{margin-top:5px}
+#presentClose{margin-top:34px}
+
+/* ============ RESPONSIVE ============ */
+@media (max-width:1439px){
+  .workspace{grid-template-columns:178px minmax(0,1fr) 240px}
+  .fgrid{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+@media (max-width:1279px){
+  .shell{padding:0 18px 56px}
+  .workspace{grid-template-columns:170px minmax(0,1fr)}
+  .summary{display:none}
+  .stackwrap{grid-template-columns:36px minmax(0,1fr) 12px 160px}
+  .note{width:160px}
+}
+@media (max-width:1200px){
+  .save-ind{max-width:65px}
+  .status-pill{max-width:210px}
+}
+@media (max-width:1150px){
+  .toolbar{gap:5px}
+  .toolbar-actions{gap:4px}
+  .lbl-full{display:none}
+  .lbl-short{display:inline}
+}
+@media (max-width:1050px){
+  .save-ind{display:none}
+}
+@media (max-width:1023px){
+  .scengrid{grid-template-columns:1fr !important}
+  .subgrid{grid-template-columns:1fr}
+  .masthead{flex-wrap:wrap}
+}
+@media (max-width:760px){
+  .workspace{grid-template-columns:1fr}
+  .nav{display:flex;overflow-x:auto;border-right:0;border-bottom:1px solid var(--line);padding:0}
+  .nav-grp{display:none}
+  .nav a,.nav button{border-left:0;border-bottom:2px solid transparent;white-space:nowrap;width:auto}
+  .nav a.on,.nav button.on{border-left:0;border-bottom-color:var(--navy)}
+  .fgrid,.fgrid.c2,.fgrid.c4{grid-template-columns:1fr}
+  .riskrail{display:none}
+  .rowh,.rowr,.rowf{grid-template-columns:minmax(0,1fr) 100px 84px 74px 28px}
+  .toolbar{flex-wrap:wrap;position:static}
+  .toolbar-actions{max-width:100%;margin-right:0;flex-wrap:wrap}
+  .capital-stack-analysis-section{padding:18px 14px 22px}
+}
+
+/* ============ PRINT ============ */
+@media print{
+  @page{size:letter landscape;margin:10mm}
+  body{font-size:9.5px;background:#fff}
+  .shell{max-width:none;padding:0}
+  .no-print,.edit-only,.workspace,.toolbar,#tip{display:none !important}
+  .present-only{display:block !important}
+  .analysis-canvas{background:#fff;border:0;box-shadow:none;padding:0;margin-top:0}
+  .scard{box-shadow:none}
+  .capital-stack-analysis-section{background:#fff;border:1px solid #dce5ec;box-shadow:none}
+  /* P2 -- a scenario column runs ~910px against ~720px of usable height on landscape letter
+     at 10mm margins, so break-inside:avoid on it (or on the section) is a rule the page
+     cannot honour. Break at a granularity that fits: sections and columns may break, every
+     block inside them stays whole, and no heading is left stranded from its first row. */
+  .section{margin-top:14px;break-inside:auto}
+  .sec-head{break-after:avoid}
+  .scengrid{grid-template-columns:1fr 1fr !important;gap:14px}
+  .scencol{break-inside:auto}
+  .scard,.metrics,.stackwrap,.pblock,.boxnote{break-inside:avoid}
+  .scard{break-after:avoid}
+  .tbl,.cmp{break-inside:auto}
+  .tbl caption,.tbl thead,.cmp thead{break-after:avoid}
+  .tbl thead,.cmp thead{display:table-header-group}
+  .tbl tr,.cmp tr{break-inside:avoid}
+  .tscroll{overflow:visible !important;max-width:none !important}
+  .tscroll .cmp th:first-child,.tscroll .cmp td:first-child{position:static !important;border-right:0}
+  .pblock{background:#fff}
+  #presentClose{margin-top:14px}
+  .stackwrap{height:320px}
+  .seg,.note{transition:none !important}
+  .tbl td,.tbl th,.cmp td,.cmp th{padding:3px 6px}
+  *{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+}
+@media (prefers-reduced-motion:reduce){*{transition:none !important;animation:none !important}}
+</style>
+</head>
+<body>
+<div class="shell">
+<!-- ============ MASTHEAD ============ -->
+<div class="masthead">
+  <div>
+    <div class="eyebrow">Illustrative Exhibit · Development Finance</div>
+    <h1 id="mastTitle">Capital Stack Comparison — Construction Financing Alternatives</h1>
+    <div class="mast-sub" id="mastSub"></div>
+  </div>
+  <div class="mast-metrics" id="mastMetrics"></div>
+</div>
+
+<!-- ============ TOOLBAR ============ -->
+<div class="toolbar no-print">
+  <div class="mode-switch">
+    <button class="btn on" id="btnEdit">Edit Mode</button>
+    <button class="btn" id="btnPresent">Presentation</button>
+  </div>
+  <div class="toolbar-actions">
+    <button class="btn icon edit-only" id="btnUndo" title="Undo (Ctrl+Z)" aria-label="Undo">↶</button>
+    <button class="btn icon edit-only" id="btnRedo" title="Redo (Ctrl+Shift+Z)" aria-label="Redo">↷</button>
+    <button class="btn edit-only" id="btnSave">Save</button>
+    <div class="menu edit-only">
+      <button class="btn" id="btnExport" aria-haspopup="true"><span class="lbl-full">Export ▾</span><span class="lbl-short">Export</span></button>
+      <div class="menu-pop" id="exportMenu" hidden>
+        <button data-act="csv">Export CSV</button>
+        <button data-act="json">Export JSON</button>
+      </div>
+    </div>
+    <div class="menu edit-only">
+      <button class="btn icon" id="btnMore" aria-haspopup="true" aria-label="More actions">⋯</button>
+      <div class="menu-pop" id="moreMenu" hidden>
+        <button data-act="addscen">+ Add scenario</button>
+        <button data-act="load">Load saved model…</button>
+        <button data-act="link">Copy shareable link</button>
+        <div class="sep"></div>
+        <div class="hd">Display units</div>
+        <button data-act="prec-m"><span class="ck"></span> Millions ($M)</button>
+        <button data-act="prec-k"><span class="ck"></span> Thousands ($000s)</button>
+        <button data-act="prec-whole"><span class="ck"></span> Whole dollars</button>
+        <div class="sep"></div>
+        <button data-act="reset">Reset model…</button>
+      </div>
+    </div>
+    <button class="btn" id="btnPrint" data-act="print">Print</button>
+    <div class="statuswrap">
+      <button class="status-pill" id="statusPill" aria-haspopup="true"></button>
+      <div class="status-panel" id="statusPanel" hidden></div>
+    </div>
+    <span class="save-ind edit-only" id="saveInd"></span>
+  </div>
+</div>
+
+<!-- ============ WORKSPACE (EDIT MODE) ============ -->
+<div class="workspace edit-only" id="workspace">
+  <nav class="nav" id="nav"></nav>
+  <div class="editor" id="editor"></div>
+  <aside class="summary"><div class="summary-inner" id="summary"></div></aside>
+</div>
+
+<!-- ============ ANALYSIS CANVAS ============ -->
+<div class="analysis-canvas">
+<div class="present-only" id="presentOpen"></div>
+<div class="section" id="cmpSection">
+  <div class="sec-head">
+    <h2>Scenario comparison</h2>
+    <span class="hint" id="cmpHint"></span>
+  </div>
+  <div id="cmpBody"></div>
+</div>
+
+<div class="section capital-stack-analysis-section" id="capitalStackSection">
+  <div class="sec-head">
+    <h2>Capital stack, key metrics &amp; sources and uses</h2>
+    <span class="hint">Segment heights = capital source ÷ total development cost</span>
+  </div>
+  <div class="scengrid" id="scenOutputs"></div>
+</div>
+
+<div class="section">
+  <div class="sec-head">
+    <h2>Equity requirement sensitivity</h2>
+    <span class="hint">Ranges are user-defined in the Sensitivity section</span>
+  </div>
+  <div class="subgrid" id="sensGrid"></div>
+</div>
+
+<div class="section" id="sofrSection">
+  <div class="sec-head"><h2>Base rate sensitivity</h2><span class="hint" id="sofrHint"></span></div>
+  <div id="sofrBody"></div>
+</div>
+
+<div class="section">
+  <div class="sec-head">
+    <h2>Structural comparison</h2>
+    <span class="hint">Leverage, capitalization, and cost of capital across scenarios</span>
+  </div>
+  <div id="matrixBody"></div>
+</div>
+
+<div class="present-only" id="presentClose"></div>
+</div>
+</div>
+
+<div id="tip" role="tooltip"></div>
+<div id="modalHost"></div>
+<script>
+"use strict";
+/* ==========================================================================
+   CAPITAL STACK MODEL
+   Architecture:  ASSUMPTIONS -> CALCULATIONS -> VALIDATION -> RENDERING
+   Every displayed figure is produced by calcScenario() from state.
+   No calculated value is written into the markup.
+   ========================================================================== */
+
+/* ---------- 1. DEFAULT ASSUMPTION SET (initial state only) ---------- */
+function defaultState(){return{
+  meta:{version:1, precision:'m', showSOFR:false, mode:'edit'},
+  project:{
+    name:'316-Unit Affordable / Workforce Housing',
+    location:'Austin, TX',
+    asOf:'June 2026',
+    units:316,
+    tdc:73800000,
+    landBasis:0,
+    constructionMonths:24,
+    financingMonths:36,
+    stabilizationMonths:0,
+    exitAssumption:'Not modeled'
+  },
+  market:{ sofr:0.0355, prime:0.0725, sofrLabel:'SOFR held flat' },
+  conv:{
+    maxCombinedLTC:0.85,
+    ltcBasis:'tdc',              // loan amount / TDC
+    sponsorBasis:'credited',     // credited | total
+    sensMin:0.70, sensMax:0.85, sensStep:0.05,
+    jrSensList:'12, 14, 15.5, 17, 18',
+    sofrList:'2.50, 3.00, 3.55, 4.00, 4.50, 5.00',
+    /* 2.10 -- held as scenario ids, not positional indices. migrate()'s deep() is a whitelist
+       against this object: any key missing here is dropped on every load. */
+    sensScenA:'A', sensScenB:'B'
+  },
+  sponsor:[
+    {id:'sp1', label:'Sponsor sources (GP) — composition TBD', cls:'other', amount:9760000, credit:true}
+  ],
+  other:[],
+  scenarios:[ scenarioA(), scenarioB() ]
+};}
+
+function blankSenior(){return{
+  lender:'', type:'Senior construction loan', mode:'ltc', ltc:0.65, amount:47970000,
+  rateType:'sofr', spreadBps:275, fixedRate:0.0630, useFloor:false, floor:0.0300,
+  useCap:false, cap:0.0500,
+  origBps:0, exitBps:0, extBps:0, unusedBps:0,
+  legal:0, thirdParty:0, appraisal:0, engineering:0, closing:0,
+  interestReserve:'Not modeled'
+};}
+
+function scenarioA(){return{
+  id:'A', name:'Scenario A — Debt Fund', tag:'Single-lender',
+  senior:Object.assign(blankSenior(),{lender:'Debt fund',mode:'ltc',ltc:0.80,amount:59040000,spreadBps:525}),
+  junior:{type:'none', label:'', mode:'ltc', ltc:0.20, amount:14760000, treatAsDebt:true,
+          rateMode:'single', rate:0.1400, rateLo:0.1400, rateHi:0.1700, rangeCase:'range',
+          currentPay:1.00, origBps:0, exitBps:0, termMonths:36},
+  carry:{on:false, avgOut:0.60, useSchedule:false, schedule:'10,25,40,55,70,85,95,100'},
+  ret:{gp:null, lp:null},
+  lpOverride:{on:false, amount:0}
+};}
+
+function scenarioB(){return{
+  id:'B', name:'Scenario B — Bank + Junior Capital', tag:'Two-tranche',
+  senior:Object.assign(blankSenior(),{lender:'Commercial bank',mode:'ltc',ltc:0.65,amount:47970000,spreadBps:275}),
+  junior:{type:'other', label:'Junior capital — structure TBD', mode:'ltc', ltc:0.20, amount:14760000,
+          treatAsDebt:true, rateMode:'range', rate:0.1400, rateLo:0.1400, rateHi:0.1700, rangeCase:'range',
+          currentPay:1.00, origBps:0, exitBps:0, termMonths:36},
+  carry:{on:false, avgOut:0.60, useSchedule:false, schedule:'10,25,40,55,70,85,95,100'},
+  ret:{gp:null, lp:null},
+  lpOverride:{on:false, amount:0}
+};}
+
+const JUNIOR_TYPES = {
+  none:'None',
+  second:'Second-lien debt',
+  mezz:'Mezzanine debt',
+  pref:'Preferred equity',
+  structured:'Structured equity',
+  other:'Other / structure TBD'
+};
+const DEBT_BY_DEFAULT = {second:true, mezz:true, other:true, pref:false, structured:false, none:false};
+
+/* 2.3 -- other project sources are not one bucket. Each class has a defined treatment in
+   leverage, in the cost of capital, and in stack priority (lower order = more senior). */
+const OTHER_CLASSES = {
+  soft:  {label:'Soft / subordinate debt', debt:true,  wacc:'rate', order:3,
+          note:'repayable — inside total debt and combined debt LTC'},
+  grant: {label:'Subsidy or grant',        debt:false, wacc:'zero', order:5,
+          note:'non-repayable — outside total debt, carried at 0% cost'},
+  other: {label:'Other',                   debt:false, wacc:'none', order:6,
+          note:'treatment not determined — excluded from the cost of capital'},
+  tce:   {label:'Tax-credit equity',       debt:false, wacc:'rate', order:7,
+          note:'inside common equity — outside total debt'}
+};
+
+const SPONSOR_CLASSES = {
+  cash:'Cash', noncash:'Non-cash', deferred:'Deferred cost',
+  thirdparty:'Third-party contribution', other:'Other'
+};
+
+const PRESETS = {
+  debtfund:{label:'Debt fund — single lender', senior:{lender:'Debt fund',type:'Senior construction loan',mode:'ltc',ltc:0.80,rateType:'sofr',spreadBps:525,origBps:100,exitBps:50},junior:{type:'none'},tag:'Single-lender'},
+  bank:{label:'Conventional bank', senior:{lender:'Commercial bank',type:'Senior construction loan',mode:'ltc',ltc:0.60,rateType:'sofr',spreadBps:250,origBps:75,exitBps:0},junior:{type:'none'},tag:'Single-lender'},
+  mezz:{label:'Bank + mezzanine debt', senior:{lender:'Commercial bank',type:'Senior construction loan',mode:'ltc',ltc:0.65,rateType:'sofr',spreadBps:275,origBps:75,exitBps:0},junior:{type:'mezz',label:'Mezzanine debt',mode:'ltc',ltc:0.20,rateMode:'single',rate:0.1400,treatAsDebt:true,origBps:200},tag:'Two-tranche'},
+  pref:{label:'Bank + preferred equity', senior:{lender:'Commercial bank',type:'Senior construction loan',mode:'ltc',ltc:0.65,rateType:'sofr',spreadBps:275,origBps:75,exitBps:0},junior:{type:'pref',label:'Preferred equity',mode:'ltc',ltc:0.20,rateMode:'single',rate:0.1300,treatAsDebt:false,currentPay:0.50},tag:'Two-tranche'}
+};
+
+let state = defaultState();
+
+/* ---------- 2. FORMATTING & PARSING ---------- */
+const P = () => state.meta.precision;
+function fmtMoney(v, force){
+  if(v===null||v===undefined||!isFinite(v)) return '—';
+  const p = force || P();
+  const neg = v < -0.005;
+  const a = Math.abs(v);
+  let s;
+  if(p==='m') s = '$' + (a/1e6).toFixed(2) + 'M';
+  else if(p==='k') s = '$' + Math.round(a/1e3).toLocaleString('en-US') + 'K';
+  else s = '$' + Math.round(a).toLocaleString('en-US');
+  return (neg?'−':'') + s;
+}
+function fmtPct(v,d){ if(v===null||v===undefined||!isFinite(v)) return '—';
+  return (v*100).toFixed(d===undefined?1:d) + '%'; }
+function fmtRate(v){ return fmtPct(v,2); }
+function fmtBps(v){ if(v===null||!isFinite(v)) return '—'; return Math.round(v*10000).toLocaleString('en-US')+' bps'; }
+function rng(o, f){ if(!o) return '—';
+  const a=f(o.lo), b=f(o.hi); return a===b? a : a+' – '+b; }
+
+/* Single money parser. A bare number is read literally in the unit currently displayed in
+   the field's own affix ($ / $000s / $M); a trailing k, m or b overrides that unit. There is
+   no magnitude heuristic, so there is no threshold at which the same keystroke changes
+   meaning by three orders of magnitude. */
+function parseMoney(str){
+  if(str===null||str===undefined) return 0;
+  let s = String(str).trim().toLowerCase().replace(/[$,\s]/g,'').replace('−','-');
+  if(s==='' || s==='-') return 0;
+  let mult = null;
+  if(/[kmb]$/.test(s)){
+    const c = s.slice(-1);
+    mult = c==='k' ? 1e3 : c==='m' ? 1e6 : 1e9;
+    s = s.slice(0,-1);
+  }
+  const n = parseFloat(s);
+  if(!isFinite(n)) return 0;
+  return n * (mult===null ? UF() : mult);
+}
+function parsePct(str){
+  if(str===null||str===undefined) return 0;
+  const n = parseFloat(String(str).replace(/[%,\s]/g,'').replace('−','-'));
+  return isFinite(n) ? n/100 : 0;
+}
+/* Nullable variant. Blank means "not assumed" and must stay null so the weighted cost of
+   capital is suppressed rather than silently weighted at zero. parsePct is left alone. */
+function parsePctOrNull(str){
+  if(str===null||str===undefined) return null;
+  const s = String(str).replace(/[%,\s]/g,'').replace('−','-').trim();
+  if(s==='' || s==='-') return null;
+  const n = parseFloat(s);
+  return isFinite(n) ? n/100 : null;
+}
+function parseBps(str){
+  const n = parseFloat(String(str).replace(/[,\sbps]/gi,'').replace('−','-'));
+  return isFinite(n) ? n : 0;
+}
+function parseNum(str){
+  const n = parseFloat(String(str).replace(/[,\s]/g,'').replace('−','-'));
+  return isFinite(n) ? n : 0;
+}
+function parseList(str){
+  return String(str||'').split(/[,\s;]+/).map(x=>parseFloat(x)).filter(x=>isFinite(x));
+}
+function getPath(o,p){ return p.split('.').reduce((a,k)=> a==null?a:a[k], o); }
+function setPath(o,p,v){
+  const ks = p.split('.'); const last = ks.pop();
+  const t = ks.reduce((a,k)=> a[k], o); t[last]=v;
+}
+function uid(){ return 'x'+Math.random().toString(36).slice(2,8); }
+function esc(s){ return String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+
+/* ---------- 3. CALCULATION ENGINE ---------- */
+
+function buildContext(){
+  const sp = state.sponsor;
+  const sponsorTotal = sp.reduce((a,r)=>a+(+r.amount||0),0);
+  const sponsorCredited = sp.reduce((a,r)=>a+(r.credit?(+r.amount||0):0),0);
+  const otherTotal = state.other.reduce((a,r)=>a+(+r.amount||0),0);
+  /* 2.3 -- normalise the other-sources list once, here, so calcScenario stays a function of
+     (sc, ctx, o) and never reaches into global state. */
+  const otherLines = state.other.map((o,idx)=>{
+    const cls = OTHER_CLASSES[o.cls] ? o.cls : 'other';
+    const rt = (o.rate===null||o.rate===undefined||o.rate===''||!isFinite(+o.rate)) ? null : +o.rate;
+    return {idx:idx, label:o.label||'', cls:cls, amount:+o.amount||0, rate:rt};
+  });
+  const byClass = k => otherLines.reduce((a,l)=>a+(l.cls===k?l.amount:0),0);
+  const maxLTC = +state.conv.maxCombinedLTC||0;
+  return {
+    tdc: +state.project.tdc||0,
+    sofr: +state.market.sofr||0,
+    prime: +state.market.prime||0,
+    maxCombinedLTC: maxLTC,
+    sponsorTotal, sponsorCredited, otherTotal, otherLines,
+    otherSoft: byClass('soft'), otherGrant: byClass('grant'),
+    otherTce:  byClass('tce'),  otherOther: byClass('other'),
+    /* 2.1 -- every sponsor dollar pays for the building whether or not the lender credits it
+       as equity. Funding and covenant compliance are two different questions. */
+    sponsorApplied: sponsorTotal,
+    sponsorCovenant: state.conv.sponsorBasis==='credited' ? sponsorCredited : sponsorTotal,
+    covBasis: state.conv.sponsorBasis,
+    reqEquityPct: Math.max(0, 1 - maxLTC),
+    years: (+state.project.constructionMonths||0)/12
+  };
+}
+
+function effectiveBase(sc, ctx, sofrOverride){
+  const s = sc.senior;
+  if(s.rateType==='fixed') return null;
+  let base = s.rateType==='prime' ? ctx.prime
+           : (sofrOverride!==undefined && sofrOverride!==null ? sofrOverride : ctx.sofr);
+  if(s.useFloor) base = Math.max(base, +s.floor||0);
+  if(s.useCap)   base = Math.min(base, +s.cap||Infinity);
+  return base;
+}
+function seniorRateOf(sc, ctx, sofrOverride){
+  const s = sc.senior;
+  if(s.rateType==='fixed') return +s.fixedRate||0;
+  return effectiveBase(sc,ctx,sofrOverride) + (+s.spreadBps||0)/10000;
+}
+function juniorRatePair(sc, override){
+  const j = sc.junior;
+  if(override!==undefined && override!==null) return {lo:override, hi:override};
+  if(j.rateMode==='single') return {lo:+j.rate||0, hi:+j.rate||0};
+  const lo=+j.rateLo||0, hi=+j.rateHi||0;
+  if(j.rangeCase==='low')  return {lo:lo, hi:lo};
+  if(j.rangeCase==='high') return {lo:hi, hi:hi};
+  if(j.rangeCase==='mid')  return {lo:(lo+hi)/2, hi:(lo+hi)/2};
+  return {lo:lo, hi:hi};
+}
+function avgOutstanding(sc){
+  const c = sc.carry;
+  if(c.useSchedule){
+    const l = parseList(c.schedule);
+    if(l.length) return l.reduce((a,b)=>a+b,0)/l.length/100;
+  }
+  return +c.avgOut||0;
+}
+
+function calcScenario(sc, ctx, o){
+  o = o || {};
+  const tdc = ctx.tdc;
+  const r = {sc:sc, id:sc.id, name:sc.name};
+
+  /* -- senior debt -- */
+  let seniorAmt, seniorLTC;
+  if(o.seniorLTC!==undefined && o.seniorLTC!==null){ seniorLTC=o.seniorLTC; seniorAmt=tdc*seniorLTC; }
+  else if(sc.senior.mode==='ltc'){ seniorLTC=+sc.senior.ltc||0; seniorAmt=tdc*seniorLTC; }
+  else { seniorAmt=+sc.senior.amount||0; seniorLTC= tdc>0 ? seniorAmt/tdc : 0; }
+  r.seniorAmt=seniorAmt; r.seniorLTC=seniorLTC;
+  r.baseRate = effectiveBase(sc,ctx,o.sofr);
+  r.seniorRate = seniorRateOf(sc,ctx,o.sofr);
+  r.spread = (+sc.senior.spreadBps||0)/10000;
+
+  /* -- junior capital -- */
+  const jOn = sc.junior.type !== 'none';
+  let jAmt=0, jLTC=0;
+  if(jOn){
+    if(o.juniorLTC!==undefined && o.juniorLTC!==null){ jLTC=o.juniorLTC; jAmt=tdc*jLTC; }
+    else if(sc.junior.mode==='ltc'){ jLTC=+sc.junior.ltc||0; jAmt=tdc*jLTC; }
+    else { jAmt=+sc.junior.amount||0; jLTC= tdc>0 ? jAmt/tdc : 0; }
+  }
+  r.juniorOn=jOn; r.juniorAmt=jAmt; r.juniorLTC=jLTC;
+  r.juniorIsDebt = jOn && !!sc.junior.treatAsDebt;
+  r.juniorRate = jOn ? juniorRatePair(sc, o.juniorRate) : null;
+  r.juniorDebt = r.juniorIsDebt ? jAmt : 0;
+  r.prefEquity = (jOn && !r.juniorIsDebt) ? jAmt : 0;
+
+  /* -- leverage -- */
+  r.softDebt = ctx.otherSoft;                    /* 2.3: soft / subordinate debt is debt */
+  r.totalDebt = seniorAmt + r.juniorDebt + r.softDebt;
+  r.combinedDebtLTC = tdc>0 ? r.totalDebt/tdc : 0;
+  r.totalLeverage  = tdc>0 ? (r.totalDebt + r.prefEquity)/tdc : 0;
+  r.juniorCapacityPct = Math.max(0, ctx.maxCombinedLTC - seniorLTC);
+  r.juniorCapacity    = tdc * r.juniorCapacityPct;
+
+  /* -- equity -- */
+  r.sponsorTotal = ctx.sponsorTotal;
+  r.sponsorCredited = ctx.sponsorCredited;
+  r.sponsorApplied = ctx.sponsorApplied;
+  r.otherTotal = ctx.otherTotal;
+  /* 2.3 -- soft debt is already inside totalDebt and tax-credit equity sits inside common
+     equity, so only grants and unclassified sources are carved out of the requirement. */
+  r.otherGrant = ctx.otherGrant; r.otherTce = ctx.otherTce; r.otherOther = ctx.otherOther;
+  r.commonEquity = tdc - r.totalDebt - r.prefEquity - ctx.otherGrant - ctx.otherOther;
+  r.commonEquityPct = tdc>0 ? r.commonEquity/tdc : 0;
+  /* 2.1 -- residual measured against every sponsor dollar actually funding the project, so
+     sources and uses reconcile by construction. */
+  r.lpResidual = r.commonEquity - ctx.sponsorApplied - ctx.otherTce;
+  r.lpOverridden = !!(sc.lpOverride && sc.lpOverride.on);
+  /* LP equity cannot be negative. A negative residual means sponsor sources exceed the
+     common equity requirement; that surfaces as excess sources, not as negative LP. */
+  r.lpRequired = r.lpOverridden ? (+sc.lpOverride.amount||0) : Math.max(0, r.lpResidual);
+  r.lpPctTDC = tdc>0 ? r.lpRequired/tdc : 0;
+  r.gpShare = r.commonEquity!==0 ? (r.commonEquity - r.lpRequired - ctx.otherTce)/r.commonEquity : 0;
+  r.lpShare = r.commonEquity!==0 ? r.lpRequired/r.commonEquity : 0;
+  r.tceShare = r.commonEquity!==0 ? ctx.otherTce/r.commonEquity : 0;
+
+  /* 2.1 -- lender equity covenant, reported separately from sources and uses. This is a test
+     the capitalization meets or fails; it is not a funding shortfall. The required percentage
+     is the complement of the leverage ceiling already assumed elsewhere in the model. */
+  r.covBasis = ctx.covBasis;
+  r.covEquity = ctx.sponsorCovenant + r.lpRequired + ctx.otherTce;
+  r.covEquityPct = tdc>0 ? r.covEquity/tdc : 0;
+  r.covRequiredPct = ctx.reqEquityPct;
+  r.covRequired = tdc * ctx.reqEquityPct;
+  r.covPass = r.covEquityPct >= r.covRequiredPct - 1e-9;
+  r.covShortfall = Math.max(0, r.covRequired - r.covEquity);
+
+  /* -- sources & uses -- */
+  r.sources = seniorAmt + jAmt + ctx.sponsorTotal + ctx.otherTotal + r.lpRequired;
+  r.uses = tdc;
+  r.gap = r.uses - r.sources;
+
+  /* -- blended cost of debt (debt instruments only) -- */
+  /* 2.3 -- soft debt carries its own rate and belongs in the blended cost of debt */
+  r.softInterest = ctx.otherLines.reduce((a,l)=>a+(l.cls==='soft'?l.amount*(l.rate||0):0),0);
+  if(r.totalDebt>0){
+    const f = jr => (seniorAmt*r.seniorRate + r.juniorDebt*jr + r.softInterest) / r.totalDebt;
+    r.blendedDebt = r.juniorIsDebt && r.juniorRate
+      ? {lo:f(r.juniorRate.lo), hi:f(r.juniorRate.hi)}
+      : {lo:f(0), hi:f(0)};
+    r.seniorWt = seniorAmt/r.totalDebt;
+    r.juniorWt = r.juniorDebt/r.totalDebt;
+    r.softWt   = r.softDebt/r.totalDebt;
+  } else { r.blendedDebt=null; r.seniorWt=0; r.juniorWt=0; r.softWt=0; }
+
+  /* -- fees -- */
+  const S=sc.senior, J=sc.junior, bp=x=>(+x||0)/10000;
+  const avgOut = avgOutstanding(sc);
+  r.avgOut = avgOut;
+  r.feeSenior = seniorAmt*(bp(S.origBps)+bp(S.exitBps)+bp(S.extBps))
+              + seniorAmt*(1-avgOut)*bp(S.unusedBps)*ctx.years;
+  r.feeJunior = jAmt*(bp(J.origBps)+bp(J.exitBps));
+  r.feeFlat = (+S.legal||0)+(+S.thirdParty||0)+(+S.appraisal||0)+(+S.engineering||0)+(+S.closing||0);
+  r.feesTotal = r.feeSenior + r.feeJunior + r.feeFlat;
+  r.feesEntered = r.feesTotal > 0;
+
+  /* -- interest carry (optional) -- */
+  r.carryOn = !!sc.carry.on;
+  const yrs = ctx.years;
+  r.carrySenior = seniorAmt * r.seniorRate * yrs * avgOut;
+  const cp = (+J.currentPay);
+  r.carryJunior = jOn && r.juniorRate
+    ? {lo:jAmt*r.juniorRate.lo*yrs*avgOut, hi:jAmt*r.juniorRate.hi*yrs*avgOut} : null;
+  r.carryTotal = r.carryJunior
+    ? {lo:r.carrySenior+r.carryJunior.lo, hi:r.carrySenior+r.carryJunior.hi}
+    : {lo:r.carrySenior, hi:r.carrySenior};
+  r.currentPayPct = cp;
+
+  /* annual interest on debt only — used by sensitivity tables */
+  r.annualDebtInterest = r.blendedDebt
+    ? {lo:r.totalDebt*r.blendedDebt.lo, hi:r.totalDebt*r.blendedDebt.hi} : null;
+
+  /* Carry and fees above are charged on senior plus the whole junior tranche, whether that
+     tranche is classified as debt or as preferred equity. The denominator has to match that
+     scope or the rate is overstated whenever the junior tranche sits outside total debt. */
+  const finBase = r.totalDebt + r.prefEquity;
+  r.effFinCost = (finBase>0 && yrs>0)
+    ? {lo:(r.carryTotal.lo+r.feesTotal)/finBase/yrs, hi:(r.carryTotal.hi+r.feesTotal)/finBase/yrs}
+    : null;
+
+  /* -- weighted cost of capital (only if every required return exists) -- */
+  const legs=[]; let missing=[];
+  if(seniorAmt>0) legs.push([seniorAmt, {lo:r.seniorRate,hi:r.seniorRate}]);
+  if(r.juniorDebt>0) legs.push([r.juniorDebt, r.juniorRate]);
+  if(r.prefEquity>0) legs.push([r.prefEquity, r.juniorRate]);
+  /* 2.3 -- soft debt at its rate, grants at 0%, tax-credit equity at its required return,
+     unclassified sources excluded from both sides of the ratio and disclosed instead. */
+  ctx.otherLines.forEach(l=>{
+    if(!(l.amount>0)) return;
+    const cls = OTHER_CLASSES[l.cls];
+    if(cls.wacc==='none') return;
+    if(cls.wacc==='zero'){ legs.push([l.amount,{lo:0,hi:0}]); return; }
+    if(l.rate===null){ missing.push('required return on '+(l.label||cls.label.toLowerCase())); return; }
+    legs.push([l.amount,{lo:l.rate,hi:l.rate}]);
+  });
+  /* blank is "not assumed", never zero. '' and null are both blank. */
+  const retOf = x => (x===null||x===undefined||x==='') ? null : (isFinite(+x) ? +x : null);
+  if(ctx.sponsorApplied>0){ const gp=retOf(sc.ret.gp);
+    if(gp===null) missing.push('GP required return'); else legs.push([ctx.sponsorApplied,{lo:gp,hi:gp}]); }
+  if(r.lpRequired>0){ const lp=retOf(sc.ret.lp);
+    if(lp===null) missing.push('LP required return'); else legs.push([r.lpRequired,{lo:lp,hi:lp}]); }
+  r.waccMissing = missing;
+  if(missing.length===0 && legs.length){
+    const den = legs.reduce((a,l)=>a+l[0],0);
+    r.wacc = {lo:legs.reduce((a,l)=>a+l[0]*l[1].lo,0)/den, hi:legs.reduce((a,l)=>a+l[0]*l[1].hi,0)/den};
+    r.waccBase = den;
+  } else r.wacc = null;
+
+  /* -- providers & structure -- */
+  r.providers = 1 + (jOn?1:0) + (r.lpRequired>5000?1:0);
+  r.intercreditor = jOn;
+
+  /* -- stack segments, bottom (senior) to top (LP) -- */
+  const segs=[];
+  /* colour is resolved at draw time from STACK_COLORS; segments carry no colour of their own */
+  const push=(key,label,amt,detail)=>{ if(amt>0.005) segs.push({key,label,amt,pct:tdc>0?amt/tdc:0,detail}); };
+  /* 2.3 -- each line is its own band, placed by the priority its class actually carries,
+     instead of one aggregate band asserting a position it does not hold. */
+  const SEG_KEY = {soft:'soft', grant:'grant', tce:'tce', other:'othersrc'};
+  const otherAt = (lo,hi) => ctx.otherLines
+    .filter(l=>l.amount>0.005 && OTHER_CLASSES[l.cls].order>=lo && OTHER_CLASSES[l.cls].order<=hi)
+    .sort((a,b)=>OTHER_CLASSES[a.cls].order-OTHER_CLASSES[b.cls].order || a.idx-b.idx)
+    .forEach(l=>push(SEG_KEY[l.cls], l.label||OTHER_CLASSES[l.cls].label, l.amount,
+                     OTHER_CLASSES[l.cls].note));
+  push('senior', sc.senior.type||'Senior debt', seniorAmt, (sc.senior.lender||'Senior lender'));
+  if(r.juniorDebt>0) push('junior', JUNIOR_TYPES[sc.junior.type]||'Junior debt', r.juniorDebt, sc.junior.label||'');
+  otherAt(1,4);                                     /* soft / subordinate debt */
+  if(r.prefEquity>0) push('pref', JUNIOR_TYPES[sc.junior.type]||'Preferred equity', r.prefEquity, sc.junior.label||'');
+  otherAt(5,6);                                     /* grants, unclassified */
+  otherAt(7,9);                                     /* tax-credit equity */
+  push('gp','Sponsor sources (GP)', ctx.sponsorTotal, 'Equity credit: '+fmtMoney(ctx.sponsorCredited));
+  push('lp','LP equity', Math.max(0,r.lpRequired), 'Residual requirement');
+  const covered = segs.reduce((a,s)=>a+s.amt,0);
+  if(tdc - covered > 5000) segs.push({key:'gap',label:'Unfunded gap',amt:tdc-covered,
+      pct:(tdc-covered)/tdc, detail:'Sources short of uses'});
+  r.segments = segs;
+  r.stackPct = segs.reduce((a,s)=>a+s.pct,0);
+  /* When sources exceed uses the bar legitimately runs past 100% of TDC. Scale the drawing
+     to total sources and mark the 100% TDC line, rather than distorting any segment. */
+  r.stackScale = Math.max(tdc, covered);
+  return r;
+}
+
+/* ---------- 4. VALIDATION ---------- */
+function validate(rs, ctx){
+  const out=[];
+  const add=(lvl,msg)=>out.push({lvl,msg});
+  if(!(ctx.tdc>0)) add('e','Total development cost is zero — enter a project cost before reading any output.');
+  /* a percentage entered above 100% is an entry error, not an assumption */
+  [['Assumed maximum combined LTC', ctx.maxCombinedLTC],
+   ['Sensitivity minimum LTC', +state.conv.sensMin],
+   ['Sensitivity maximum LTC', +state.conv.sensMax]].forEach(pair=>{
+    if(isFinite(pair[1]) && pair[1] > 1.0001)
+      add('e', pair[0]+' is '+fmtPct(pair[1])+' — a figure above 100% looks like an entry error (e.g. 850 entered for 85).');
+  });
+  if(isFinite(+state.conv.sensMin) && isFinite(+state.conv.sensMax) && !(+state.conv.sensMin < +state.conv.sensMax))
+    add('w','Sensitivity range: minimum LTC of '+fmtPct(+state.conv.sensMin)+' is not below the maximum of '+
+      fmtPct(+state.conv.sensMax)+' — the senior LTC table shows the base case only.');
+  if(state.sponsor.length && ctx.sponsorTotal<=0) add('w','Sponsor sources total $0.');
+  /* 2.1 -- uncredited sponsor sources are a covenant question, not a funding shortfall */
+  if(ctx.sponsorCredited < ctx.sponsorTotal && ctx.covBasis==='credited')
+    add('i','Sponsor sources of '+fmtMoney(ctx.sponsorTotal-ctx.sponsorCredited)+' are not recognized by the lender as equity. They still fund the project and are counted in sources and uses; they are excluded from the lender equity covenant test only.');
+  ctx.otherLines.forEach(l=>{
+    if(!(l.amount>0)) return;
+    const cls=OTHER_CLASSES[l.cls];
+    if(l.cls==='other')
+      add('w','Other project source \u201c'+(l.label||'unlabelled')+'\u201d is unclassified. It is held outside total debt, outside combined debt LTC and outside the cost of capital until a class is selected.');
+    else if(cls.wacc==='rate' && l.rate===null)
+      add('w','Other project source \u201c'+(l.label||'unlabelled')+'\u201d is classified as '+cls.label.toLowerCase()+' but carries no rate or required return — the weighted cost of capital is suppressed.');
+  });
+
+  rs.forEach(r=>{
+    const n = r.name;
+    if(r.seniorLTC > 1.0001) add('e', n+': senior LTC of '+fmtPct(r.seniorLTC)+' exceeds 100% of TDC.');
+    /* 2.6 -- the combined test is the meaningful one. 80% senior + 20% mezz against an 85%
+       ceiling is a 100% capitalization with no common equity: that is an error. A senior-only
+       breach with room left under the combined ceiling is the lesser condition. */
+    if(r.totalLeverage > ctx.maxCombinedLTC + 1e-9)
+      add('e', n+': total leverage of '+fmtPct(r.totalLeverage)+' exceeds the assumed maximum of '+fmtPct(ctx.maxCombinedLTC)+'.');
+    if(r.seniorLTC > ctx.maxCombinedLTC + 1e-9)
+      add('w', n+': senior LTC of '+fmtPct(r.seniorLTC)+' on its own exceeds the combined leverage constraint of '+fmtPct(ctx.maxCombinedLTC)+'.');
+    if(!r.covPass && ctx.tdc>0)
+      add('w', n+': lender-recognized equity of '+fmtMoney(r.covEquity)+' ('+fmtPct(r.covEquityPct)+' of TDC) is below the '+fmtPct(r.covRequiredPct)+' implied by the leverage ceiling — short by '+fmtMoney(r.covShortfall)+'.');
+    if(r.lpResidual < -5000)
+      add('w', n+': sponsor and tax-credit sources exceed the common equity requirement by '+fmtMoney(-r.lpResidual)+'. No LP equity is required and the project is over-funded by that amount.');
+    if(Math.abs(r.gap) > 5000){
+      add(r.gap>0?'e':'w', n+': '+(r.gap>0?'unfunded gap of '+fmtMoney(r.gap):'excess sources of '+fmtMoney(-r.gap))+' — sources do not reconcile to uses.');
+    }
+    else if(Math.abs(r.stackPct-1) > 0.0005 && ctx.tdc>0)
+      add('e', n+': capital stack sums to '+fmtPct(r.stackPct,2)+', not 100%.');
+    if(r.seniorRate > 0.30) add('w', n+': senior all-in rate of '+fmtRate(r.seniorRate)+' looks like a percentage-entry error (e.g. 630 instead of 6.30).');
+    if(r.juniorOn && r.juniorRate && r.juniorRate.hi > 0.60) add('w', n+': junior cost of '+fmtRate(r.juniorRate.hi)+' looks like a percentage-entry error.');
+    if(r.juniorOn && !(r.juniorRate.lo>0)) add('w', n+': junior capital cost not entered.');
+    if(!(r.seniorRate>0)) add('w', n+': senior interest rate is zero.');
+    if(r.juniorOn && r.juniorRate && r.juniorRate.lo>r.juniorRate.hi)
+      add('w', n+': junior cost range is inverted (low above high).');
+    if(r.juniorOn && !r.juniorIsDebt && r.sc.junior.type!=='pref' && r.sc.junior.type!=='structured')
+      add('w', n+': '+JUNIOR_TYPES[r.sc.junior.type]+' is excluded from debt metrics by the current classification toggle.');
+    if(r.juniorOn && r.juniorIsDebt && (r.sc.junior.type==='pref'||r.sc.junior.type==='structured'))
+      add('w', n+': '+JUNIOR_TYPES[r.sc.junior.type]+' is being included in total debt and blended debt cost. That is an analytical convention, not a default.');
+    if(r.juniorOn && r.juniorAmt > r.juniorCapacity + 5000 && r.juniorIsDebt)
+      add('w', n+': junior debt of '+fmtMoney(r.juniorAmt)+' exceeds junior capacity of '+fmtMoney(r.juniorCapacity)+' under the combined leverage constraint.');
+    if(r.feesEntered && ctx.tdc>0 && r.feesTotal > 0.15*ctx.tdc)
+      add('w', n+': financing fees of '+fmtMoney(r.feesTotal)+' are '+fmtPct(r.feesTotal/ctx.tdc)+
+        ' of total development cost — check the entry unit on the fee and closing-cost fields.');
+    if(r.lpOverridden) add('i', n+': LP equity is manually overridden — it is not calculated as the residual.');
+  });
+  return out;
+}
+
+/* Assumptions that are modeled rather than confirmed */
+function confirmations(rs, ctx){
+  const out=[];
+  const add=m=>out.push(m);
+  add('Combined leverage ceiling of '+fmtPct(ctx.maxCombinedLTC)+' is a user-selected constraint, not an industry rule.');
+  if(state.market.sofrLabel) add('Base rate: '+state.market.sofrLabel+' at '+fmtRate(state.market.sofr)+' — no forward curve modeled.');
+  rs.forEach(r=>{
+    const n=r.name;
+    if(!r.sc.senior.useFloor) add(n+': senior base-rate floor not applied — floor terms unconfirmed.');
+    if(!r.sc.senior.lender) add(n+': senior lender not identified.');
+    if(r.juniorOn && (r.sc.junior.type==='other')) add(n+': junior capital structure is undetermined — second-lien debt, mezzanine and preferred equity carry different leverage and priority treatment.');
+    if(r.juniorOn && r.sc.junior.rateMode==='range') add(n+': junior capital priced as a range ('+fmtRate(r.sc.junior.rateLo)+'–'+fmtRate(r.sc.junior.rateHi)+'), not a confirmed quote.');
+    if(!r.feesEntered) add(n+': lender fees, legal and third-party report costs not entered — financing costs shown exclude them.');
+    if(!r.carryOn) add(n+': interest reserve / carry not modeled ('+r.sc.senior.interestReserve+').');
+    if(r.juniorOn){
+      add(n+': current-pay portion of '+fmtPct(r.currentPayPct,0)+' is disclosure only. Any accrued or PIK '+
+        'balance compounds, so balance × rate × years understates the true cost of the accruing portion.');
+      add(n+': the junior tranche is carried on the same average-outstanding draw curve as the senior loan '+
+        '('+fmtPct(r.avgOut,0)+'), which is an assumption rather than a modeled draw schedule.');
+    }
+    if(r.waccMissing.length) add(n+': weighted cost of capital not calculated — missing '+r.waccMissing.join(' and ')+'.');
+  });
+  const uncredited = state.sponsor.filter(s=>!s.credit);
+  if(uncredited.length) add('Sponsor sources not credited as lender equity: '+uncredited.map(s=>s.label).join('; ')+'.');
+  if(state.sponsor.length===1) add('Sponsor sources are shown in aggregate — itemization and lender equity credit per line not confirmed.');
+  if(!(state.project.landBasis>0)) add('Land basis not entered separately from total development cost.');
+  return out;
+}
+/* ==========================================================================
+   UI LAYER — presentation only.
+   All numbers rendered here come from calcScenario() in the engine above.
+   ARCHITECTURE:  ASSUMPTIONS -> CALCULATION ENGINE -> VALIDATION -> RENDERING
+   ========================================================================== */
+
+const ui = { section:'project' };
+const hist = { stack:[], idx:-1, timer:null };
+const AUTOKEY='capstack.autosave', SAVEKEY='capstack.saved';
+
+function clone(o){ return JSON.parse(JSON.stringify(o)); }
+
+/* ---------- history ---------- */
+function pushHistory(){
+  const snap=JSON.stringify(state);
+  if(hist.idx>=0 && hist.stack[hist.idx]===snap) return;
+  hist.stack=hist.stack.slice(0,hist.idx+1);
+  hist.stack.push(snap);
+  if(hist.stack.length>60) hist.stack.shift();
+  hist.idx=hist.stack.length-1;
+  updateUndoButtons();
+}
+function commit(){                       /* debounced history + autosave */
+  clearTimeout(hist.timer);
+  hist.timer=setTimeout(()=>{ pushHistory(); autosave(); }, 550);
+  showSaving();
+}
+/* A change still inside the debounce window has not been snapshotted yet.
+   Flush it first, otherwise Ctrl+Z immediately after an edit does nothing. */
+function flushCommit(){
+  if(hist.timer){ clearTimeout(hist.timer); hist.timer=null; pushHistory(); autosave(); }
+}
+function undo(){ flushCommit(); if(hist.idx<=0) return; hist.idx--; applyHistory(); }
+function redo(){ flushCommit(); if(hist.idx>=hist.stack.length-1) return; hist.idx++; applyHistory(); }
+function applyHistory(){
+  state=JSON.parse(hist.stack[hist.idx]);
+  updateUndoButtons(); autosave();
+  refresh({shell:true,editor:true});
+}
+function updateUndoButtons(){
+  const u=document.getElementById('btnUndo'), r=document.getElementById('btnRedo');
+  if(u) u.disabled = hist.idx<=0;
+  if(r) r.disabled = hist.idx>=hist.stack.length-1;
+}
+
+/* ---------- units & formatting for inputs ---------- */
+const UF = () => ({m:1e6,k:1e3,whole:1}[state.meta.precision]);
+const USUF = () => ({m:'M',k:'000s',whole:''}[state.meta.precision]);
+function trimNum(n,d){ return (+n).toFixed(d).replace(/\.?0+$/,'') || '0'; }
+function moneyIn(v){ const u=UF(); return state.meta.precision==='m'? (v/u).toFixed(2) : Math.round(v/u).toLocaleString('en-US'); }
+function rawOf(v,kind){
+  if(v===null||v===undefined) return '';
+  if(kind==='money') return trimNum(v/UF(),4);
+  if(kind==='pct'||kind==='rate'||kind==='raten') return trimNum(v*100,4);
+  if(kind==='bps') return String(Math.round(v));
+  return String(v);
+}
+function dispOf(v,kind){
+  if(kind==='text') return v==null?'':String(v);
+  if(v===null||v===undefined||v==='') return '';
+  if(kind==='money') return moneyIn(v);
+  if(kind==='pct') return (v*100).toFixed(2);
+  if(kind==='rate'||kind==='raten') return (v*100).toFixed(2);
+  if(kind==='bps') return String(Math.round(v));
+  return String(v);
+}
+function parseKind(str,kind){
+  if(kind==='text') return str;
+  if(kind==='money') return parseMoney(str);          /* one parser, one rule */
+  if(kind==='raten') return parsePctOrNull(str);      /* nullable rate: blank stays blank */
+  if(kind==='pct'||kind==='rate') return parsePct(str);
+  if(kind==='bps') return parseBps(str);
+  return parseNum(str);
+}
+function affix(kind,o){
+  if(o&&o.affix!==undefined) return o.affix;
+  if(kind==='money') return {pre:'$', suf:USUF()};
+  if(kind==='pct'||kind==='rate'||kind==='raten') return {suf:'%'};
+  if(kind==='bps') return {suf:'bps'};
+  if(kind==='num') return {suf:(o&&o.unit)||''};
+  return {};
+}
+
+/* ---------- input builders ---------- */
+function tipAttr(t,title){ return t? ' data-tip="'+esc(t)+'"'+(title?' data-tiptitle="'+esc(title)+'"':'') : ''; }
+function infoIcon(t,title){ return t? '<i class="i" tabindex="0"'+tipAttr(t,title)+'>i</i>' : ''; }
+
+function F(label,path,kind,o){
+  o=o||{};
+  const v=getPath(state,path), a=affix(kind,o), calc=!!o.calc;
+  return '<div class="f'+(calc?' calc-f':'')+'"'+(o.style?' style="'+o.style+'"':'')+'>'+
+    '<label>'+esc(label)+infoIcon(o.tip,label)+'</label>'+
+    '<div class="ip'+(kind==='text'?' text':'')+(calc?' calc':'')+'">'+
+      (a.pre?'<span class="af pre">'+esc(a.pre)+'</span>':'')+
+      (calc
+        ? '<output data-path="'+path+'" data-kind="'+kind+'" data-calc="1" aria-live="off"'+
+            (o.id?' id="'+o.id+'"':'')+'>'+esc(dispOf(v,kind))+'</output>'
+        : '<input type="text" data-path="'+path+'" data-kind="'+kind+'"'+
+            (o.id?' id="'+o.id+'"':'')+' value="'+esc(dispOf(v,kind))+'">')+
+      (a.suf?'<span class="af suf">'+esc(a.suf)+'</span>':'')+
+      ((o.clear && v!==null && v!==undefined && v!=='')
+        ? '<button type="button" class="af suf clr" data-clear="'+path+'" title="Clear — leave unassumed" aria-label="Clear '+esc(label)+'">×</button>'
+        : '')+
+    '</div>'+
+    (o.slider?'<input type="range" data-path="'+path+'" data-kind="slider-'+kind+'" min="'+o.slider[0]+'" max="'+o.slider[1]+'" step="'+o.slider[2]+'" value="'+((kind==='pct'||kind==='rate')?v*100:v)+'">':'')+
+    (o.help?'<div class="help"'+(o.helpId?' id="'+o.helpId+'"':'')+'>'+o.help+'</div>':'')+
+  '</div>';
+}
+function S(label,path,opts,o){
+  o=o||{}; const v=getPath(state,path);
+  return '<div class="f"><label>'+esc(label)+infoIcon(o.tip,label)+'</label>'+
+    '<div class="ip"><select data-path="'+path+'" data-kind="text"'+(o.struct?' data-struct="1"':'')+'>'+
+    opts.map(p=>'<option value="'+esc(p[0])+'"'+(String(v)===String(p[0])?' selected':'')+'>'+esc(p[1])+'</option>').join('')+
+    '</select></div>'+(o.help?'<div class="help">'+o.help+'</div>':'')+'</div>';
+}
+function R(label,path,opts,o){
+  o=o||{}; const v=getPath(state,path);
+  return '<div class="f"><label>'+esc(label)+infoIcon(o.tip,label)+'</label><div class="radio">'+
+    opts.map(p=>'<label><input type="radio" name="'+path.replace(/\./g,'_')+'" data-path="'+path+'" value="'+esc(p[0])+'"'+(String(v)===String(p[0])?' checked':'')+'>'+esc(p[1])+'</label>').join('')+
+    '</div></div>';
+}
+function C(label,path,o){
+  o=o||{}; const v=getPath(state,path);
+  return '<div class="f"><label class="chk"><input type="checkbox" data-path="'+path+'" data-kind="bool"'+(o.struct?' data-struct="1"':'')+(v?' checked':'')+'> '+esc(label)+infoIcon(o.tip,label)+'</label></div>';
+}
+
+/* ---------- shared tooltip copy ---------- */
+const T={
+  ltc:'Loan amount divided by total development cost.',
+  combined:'Senior debt plus junior debt divided by total development cost. Preferred equity is excluded.',
+  totalLev:'Senior debt, junior debt and preferred equity divided by total development cost.',
+  credit:'Amount of sponsor capital the lender recognizes as equity.',
+  lp:'Remaining common equity requirement after recognized sponsor equity.',
+  blended:'Weighted average interest cost of debt capital.',
+  wacc:'Weighted average cost of all capital. Requires GP and LP return assumptions.',
+  tdc:'Total uses. Every source in the model is expressed as a percentage of this figure.',
+  ceiling:'Junior capital combined leverage constraint. A user-selected underwriting assumption, not an industry rule.',
+  treat:'Off = shown as preferred equity: excluded from total debt, combined debt LTC and blended cost of debt, and reported on its own line.',
+  spread:'Basis points added to the reference rate. 100 bps = 1.00%.',
+  mode:'LTC mode sizes the loan from TDC. Loan-amount mode derives the implied LTC. The two can never disagree.',
+  carry:'Optional. Balance × rate × construction period × average outstanding balance.',
+  gap:'Total uses less total sources. Anything other than zero means the capitalization does not fund the project.'
+};
+
+/* ---------- navigation ---------- */
+function renderNav(){
+  const ctx=buildContext();
+  const rs=state.scenarios.map(sc=>calcScenario(sc,ctx));
+  /* 2.8 -- an <a> with no href takes focus but never fires click on Enter. These are
+     buttons: they activate on Enter and on Space with no extra key handling. */
+  const item=(id,label,badge)=>'<button type="button" data-sec="'+id+'" class="'+(ui.section===id?'on':'')+'">'+
+    '<span>'+esc(label)+'</span>'+(badge?'<span class="badge">'+badge+'</span>':'')+'</button>';
+  document.getElementById('nav').innerHTML=
+    '<div class="nav-grp">Model</div>'+
+    item('project','Project', fmtMoney(ctx.tdc))+
+    item('market','Market assumptions', fmtRate(ctx.sofr))+
+    item('sponsor','Sponsor &amp; other sources', fmtMoney(ctx.sponsorTotal))+
+    '<div class="nav-grp">Scenarios</div>'+
+    state.scenarios.map((sc,i)=>item('scen:'+i, sc.name, fmtPct(rs[i].totalLeverage))).join('')+
+    '<button type="button" data-act="addscen"><span>+ Add scenario</span></button>'+
+    '<div class="nav-grp">Analysis</div>'+
+    item('sens','Sensitivity')+
+    item('settings','Model settings');
+}
+
+/* ---------- editor sections ---------- */
+function renderEditor(){
+  const ctx=buildContext();
+  const sec=ui.section;
+  let html='';
+  if(sec==='project') html=secProject(ctx);
+  else if(sec==='market') html=secMarket(ctx);
+  else if(sec==='sponsor') html=secSponsor(ctx);
+  else if(sec==='sens') html=secSens(ctx);
+  else if(sec==='settings') html=secSettings(ctx);
+  else if(sec.indexOf('scen:')===0){
+    const i=+sec.split(':')[1];
+    if(!state.scenarios[i]){ ui.section='project'; return renderEditor(); }
+    html=secScenario(i,ctx);
+  }
+  document.getElementById('editor').innerHTML=html;
+}
+function edHead(title,sub,actions){
+  return '<div class="ed-head"><div><h2>'+esc(title)+'</h2><p>'+sub+'</p></div>'+
+    (actions?'<div class="scard-actions">'+actions+'</div>':'')+'</div>';
+}
+
+function secProject(ctx){
+  return edHead('Project','Identity and total cost. Every source in the model is sized against total development cost.')+
+    '<div class="block"><h3>Identification</h3><div class="fgrid">'+
+      F('Project name','project.name','text')+
+      F('Location','project.location','text')+
+      F('As of','project.asOf','text')+
+    '</div></div>'+
+    '<div class="block"><h3>Cost &amp; scale</h3><div class="fgrid">'+
+      F('Number of units','project.units','num',{unit:'units'})+
+      F('Total development cost','project.tdc','money',{tip:T.tdc})+
+      F('Land value / basis','project.landBasis','money',{tip:'Informational. Sits within total development cost; use it to sanity-check a land contribution.'})+
+      F('Cost per unit','project.__cpu','money',{calc:true,id:'calc-cpu'})+
+    '</div></div>'+
+    '<div class="block"><h3>Timing</h3><div class="fgrid">'+
+      F('Construction period','project.constructionMonths','num',{unit:'months'})+
+      F('Financing period','project.financingMonths','num',{unit:'months'})+
+      F('Stabilization period','project.stabilizationMonths','num',{unit:'months'})+
+      F('Exit assumption (narrative only — not modeled)','project.exitAssumption','text')+
+    '</div></div>';
+}
+
+function secMarket(ctx){
+  const rs=state.scenarios.map(sc=>calcScenario(sc,ctx));
+  return edHead('Market assumptions','Reference rates and the leverage constraint applied across every scenario.')+
+    '<div class="block"><h3>Reference rates</h3><div class="fgrid">'+
+      F('SOFR','market.sofr','rate',{slider:[0,10,0.05],tip:'Reference rate for floating-rate tranches. Changing it reprices every floating tranche in the model.'})+
+      F('Prime rate','market.prime','rate')+
+      F('Base rate note','market.sofrLabel','text')+
+    '</div>'+
+    '<div class="boxnote" id="rateSummary"></div></div>'+
+    '<div class="block"><h3>Leverage constraint</h3><div class="fgrid">'+
+      F('Assumed maximum combined LTC','conv.maxCombinedLTC','pct',{slider:[0,100,1],tip:T.ceiling})+
+      F('Junior capacity — '+esc(state.scenarios[0].name.split('—')[0].trim()),'conv.__cap0','pct',{calc:true,id:'calc-cap0',
+        tip:'Maximum combined LTC less senior LTC.'})+
+    '</div>'+
+    '<div class="boxnote">Junior capacity = maximum combined LTC − senior LTC\nThis ceiling is an assumption you control. It is not a universal industry rule.</div></div>';
+}
+
+function secSponsor(ctx){
+  const rows=state.sponsor.map((s,i)=>
+    '<div class="rowr">'+
+      '<input type="text" data-path="sponsor.'+i+'.label" data-kind="text" value="'+esc(s.label)+'" aria-label="Source name">'+
+      '<select data-path="sponsor.'+i+'.cls" data-kind="text">'+
+        Object.keys(SPONSOR_CLASSES).map(k=>'<option value="'+k+'"'+(s.cls===k?' selected':'')+'>'+SPONSOR_CLASSES[k]+'</option>').join('')+
+      '</select>'+
+      '<input type="text" class="amt" data-path="sponsor.'+i+'.amount" data-kind="money" value="'+esc(dispOf(s.amount,'money'))+'" aria-label="Amount">'+
+      '<button type="button" class="yn '+(s.credit?'y':'n')+'" data-toggle="sponsor.'+i+'.credit">'+(s.credit?'Yes':'No')+'</button>'+
+      '<button type="button" class="del" data-del="sponsor.'+i+'" title="Delete line" aria-label="Delete line">×</button>'+
+    '</div>').join('');
+
+  const others=state.other.length? '<div class="rows osrc">'+
+      '<div class="rowh"><div>Source</div><div>Classification</div><div>Amount</div><div>Rate / return</div><div>% of TDC</div><div></div></div>'+
+      state.other.map((s,i)=>{
+        const cls=OTHER_CLASSES[s.cls]?s.cls:'other';
+        const priced=OTHER_CLASSES[cls].wacc==='rate';
+        return '<div class="rowr">'+
+        '<input type="text" data-path="other.'+i+'.label" data-kind="text" value="'+esc(s.label)+'" aria-label="Source name">'+
+        '<select data-path="other.'+i+'.cls" data-kind="text" data-struct="1" aria-label="Classification">'+
+          Object.keys(OTHER_CLASSES).map(k=>'<option value="'+k+'"'+(cls===k?' selected':'')+'>'+esc(OTHER_CLASSES[k].label)+'</option>').join('')+
+        '</select>'+
+        '<input type="text" class="amt" data-path="other.'+i+'.amount" data-kind="money" value="'+esc(dispOf(s.amount,'money'))+'" aria-label="Amount">'+
+        (priced
+          ? '<input type="text" class="amt" data-path="other.'+i+'.rate" data-kind="raten" value="'+esc(dispOf(s.rate,'raten'))+'" aria-label="Rate or required return" placeholder="%">'
+          : '<div class="pctcell">n/a</div>')+
+        '<div class="pctcell" id="opct-'+i+'"></div>'+
+        '<button type="button" class="del" data-del="other.'+i+'" title="Delete line" aria-label="Delete line">×</button>'+
+      '</div>';}).join('')+
+      '<div class="rowf" id="otherFoot"></div></div>'+
+      '<div class="footnote">'+Object.keys(OTHER_CLASSES).map(k=>
+        '<b>'+esc(OTHER_CLASSES[k].label)+'</b> — '+esc(OTHER_CLASSES[k].note)).join('<br>')+'</div>'+
+      '<div style="margin-top:9px"><button class="btn" data-act="addother">+ Add source</button></div>'
+    : '<div class="empty"><div class="lbl">Other project sources</div><p>No additional sources. '+
+      'Add them one line at a time and classify each: PACE, TIF and seller financing are subordinate debt and '+
+      'carry leverage; grants and subsidy are non-repayable; tax-credit equity sits inside common equity.</p>'+
+      '<button class="btn" data-act="addother">+ Add source</button></div>';
+
+  return edHead('Sponsor &amp; other sources','Sponsor sources are held identical across scenarios. Equity credit determines which dollars reduce the LP requirement.')+
+    '<div class="block"><h3>Sponsor / GP sources <span style="font-weight:400;text-transform:none;letter-spacing:0;font-size:10.5px;color:var(--muted)">Credit = recognized by the lender as equity</span></h3>'+
+      '<div class="rows"><div class="rowh"><div>Source</div><div>Classification</div><div>Amount</div><div>Equity credit</div><div></div></div>'+
+      rows+'<div class="rowf" id="sponsorFoot"></div></div>'+
+      '<div style="margin-top:9px"><button class="btn" data-act="addsponsor">+ Add sponsor source</button></div>'+
+      '<div class="fgrid c2" style="margin-top:16px">'+
+        S('LP residual basis','conv.sponsorBasis',[['credited','Lender-recognized sponsor equity only'],['total','All sponsor sources']],
+          {tip:'Determines which sponsor dollars reduce the LP requirement. On the credited basis, sources without equity credit still fund the project, so total sources can exceed uses.'})+
+        F('Lender-recognized equity credit','conv.__credited','money',{calc:true,id:'calc-credited',tip:T.credit})+
+      '</div></div>'+
+    '<div class="block"><h3>Other project sources</h3>'+others+'</div>';
+}
+
+function secScenario(i,ctx){
+  const sc=state.scenarios[i], p='scenarios.'+i, SR=p+'.senior', J=p+'.junior';
+  const jOn=sc.junior.type!=='none';
+  const isPref=sc.junior.type==='pref'||sc.junior.type==='structured';
+  const actions='<button class="btn" data-act="dupscen" data-i="'+i+'">Duplicate</button>'+
+    '<div class="menu"><button class="btn icon" data-menu="scen'+i+'" aria-label="Scenario actions">⋯</button>'+
+    '<div class="menu-pop" id="menu-scen'+i+'" hidden>'+
+      '<button data-act="renamescen" data-i="'+i+'">Rename…</button>'+
+      '<button data-act="dupscen" data-i="'+i+'">Duplicate</button>'+
+      '<button data-act="resetscen" data-i="'+i+'">Reset to defaults…</button>'+
+      (state.scenarios.length>1?'<div class="sep"></div><button data-act="delscen" data-i="'+i+'">Delete scenario…</button>':'')+
+    '</div></div>';
+
+  const jrBlock = jOn ? (
+    '<div class="fgrid">'+
+      S('Instrument',J+'.type',Object.keys(JUNIOR_TYPES).map(k=>[k,JUNIOR_TYPES[k]]),
+        {struct:true,tip:'Second-lien and mezzanine debt sit inside total debt. Preferred and structured equity sit outside it unless you override the classification.'})+
+      F('Instrument label',J+'.label','text')+
+      R('Sizing',J+'.mode',[['ltc','% of TDC'],['amount','Amount']])+
+      F('Junior % of TDC',J+'.ltc','pct',{slider:[0,50,0.5],calc:sc.junior.mode!=='ltc',id:'calc-jltc-'+i})+
+      F('Junior amount',J+'.amount','money',{calc:sc.junior.mode!=='amount',id:'calc-jamt-'+i})+
+      R('Pricing',J+'.rateMode',[['single','Single rate'],['range','Range']])+
+      (sc.junior.rateMode==='single'
+        ? F(isPref?'Preferred return':'Junior rate',J+'.rate','rate')
+        : F('Low',J+'.rateLo','rate')+F('High',J+'.rateHi','rate')+
+          S('Case shown',J+'.rangeCase',[['range','Show full range'],['low','Low case'],['mid','Mid case'],['high','High case']]))+
+      F('Current-pay portion',J+'.currentPay','pct',{slider:[0,100,5],tip:'Remainder accrues / PIKs. Disclosure only — carry is calculated on the full balance.'})+
+      F('Term',J+'.termMonths','num',{unit:'months'})+
+    '</div>'+
+    '<div style="margin-top:8px">'+C('Treat as debt for leverage and blended cost of debt',J+'.treatAsDebt',{tip:T.treat})+'</div>'
+  ) : (
+    '<div class="empty"><div class="lbl">Junior capital</div><p>None. This scenario is capitalized with senior debt and equity only.</p>'+
+    '<button class="btn primary" data-act="addjunior" data-i="'+i+'">+ Add junior capital</button></div>'
+  );
+
+  return edHead(sc.name, esc(sc.tag||'Financing structure')+' · senior debt, junior capital and the resulting equity requirement.', actions)+
+    '<div class="block"><h3>Scenario identity</h3><div class="fgrid c2">'+
+      F('Scenario name',p+'.name','text')+
+      F('Structure tag',p+'.tag','text')+
+    '</div></div>'+
+    '<div class="block"><h3>Senior debt</h3><div class="fgrid">'+
+      F('Lender',SR+'.lender','text')+
+      F('Facility type',SR+'.type','text')+
+      R('Sizing',SR+'.mode',[['ltc','LTC'],['amount','Loan amount']],{tip:T.mode})+
+      F('Senior LTC',SR+'.ltc','pct',{slider:[0,100,0.5],calc:sc.senior.mode!=='ltc',id:'calc-ltc-'+i,tip:T.ltc})+
+      F('Loan amount',SR+'.amount','money',{calc:sc.senior.mode!=='amount',id:'calc-amt-'+i})+
+      S('Base rate',SR+'.rateType',[['sofr','SOFR (floating)'],['prime','Prime (floating)'],['fixed','Fixed rate']],{struct:true})+
+      (sc.senior.rateType==='fixed'
+        ? F('Fixed rate',SR+'.fixedRate','rate')
+        : F('Spread',SR+'.spreadBps','bps',{slider:[0,900,5],tip:T.spread}))+
+      F('All-in senior rate',SR+'.__allin','rate',{calc:true,id:'calc-rate-'+i,help:'&nbsp;',helpId:'help-rate-'+i})+
+    '</div></div>'+
+    '<div class="block"><h3>Junior capital</h3>'+jrBlock+'</div>'+
+
+    '<details class="adv"><summary>Advanced financing assumptions</summary><div class="adv-body">'+
+      '<div class="block" style="margin-top:0"><h3>Rate protection</h3><div class="fgrid">'+
+        C('Apply base-rate floor',SR+'.useFloor',{struct:true})+
+        (sc.senior.useFloor? F('Floor',SR+'.floor','rate') : '<div class="f"></div>')+
+        C('Apply rate cap',SR+'.useCap',{struct:true})+
+        (sc.senior.useCap? F('Cap',SR+'.cap','rate') : '<div class="f"></div>')+
+      '</div></div>'+
+      '<div class="block"><h3>Lender fees</h3><div class="fgrid">'+
+        F('Senior origination',SR+'.origBps','bps')+
+        F('Senior exit fee',SR+'.exitBps','bps')+
+        F('Extension fee',SR+'.extBps','bps')+
+        F('Unused / commitment fee',SR+'.unusedBps','bps',{tip:'Charged on the undrawn balance over the construction period.'})+
+        (jOn? F('Junior origination',J+'.origBps','bps') : '')+
+        (jOn? F('Junior exit fee',J+'.exitBps','bps') : '')+
+      '</div></div>'+
+      '<div class="block"><h3>Closing costs</h3><div class="fgrid">'+
+        F('Legal',SR+'.legal','money')+
+        F('Third-party reports',SR+'.thirdParty','money')+
+        F('Appraisal',SR+'.appraisal','money')+
+        F('Engineering',SR+'.engineering','money')+
+        F('Loan closing costs',SR+'.closing','money')+
+        F('Total financing fees',SR+'.__fees','money',{calc:true,id:'calc-fees-'+i})+
+      '</div></div>'+
+      '<div class="block"><h3>Interest carry</h3><div class="fgrid">'+
+        C('Model interest carry',p+'.carry.on',{struct:true,tip:T.carry})+
+        C('Use custom draw schedule',p+'.carry.useSchedule',{struct:true})+
+        (sc.carry.useSchedule
+          ? F('Monthly outstanding balance',p+'.carry.schedule','text',{affix:{suf:'%'}})
+          : F('Average outstanding balance',p+'.carry.avgOut','pct',{slider:[0,100,5]}))+
+        F('Interest reserve treatment (narrative only)',SR+'.interestReserve','text')+
+        F('Estimated carry (if modeled)',p+'.__carry','money',{calc:true,id:'calc-carry-'+i})+
+      '</div></div>'+
+      '<div class="block"><h3>Return assumptions &amp; overrides</h3><div class="fgrid">'+
+        F('GP required return',p+'.ret.gp','raten',{clear:true,tip:'Leave blank to suppress the weighted cost of capital rather than invent an assumption.'})+
+        F('LP required return',p+'.ret.lp','raten',{clear:true})+
+        F('Weighted cost of capital',p+'.__wacc','rate',{calc:true,id:'calc-wacc-'+i,tip:T.wacc})+
+        C('Override LP equity',p+'.lpOverride.on',{struct:true})+
+        (sc.lpOverride.on? F('LP equity',p+'.lpOverride.amount','money') : '<div class="f"></div>')+
+      '</div></div>'+
+    '</div></details>';
+}
+
+function secSens(ctx){
+  const rs=state.scenarios.map(sc=>calcScenario(sc,ctx));
+  const pick=(label,key)=>S(label,'conv.'+key,state.scenarios.map(sc=>[String(sc.id),sc.name]),{});
+  return edHead('Sensitivity','Ranges that drive the sensitivity tables in the analysis below.')+
+    '<div class="block"><h3>Senior LTC range — LP equity requirement</h3><div class="fgrid c4">'+
+      F('Minimum LTC','conv.sensMin','pct')+
+      F('Maximum LTC','conv.sensMax','pct')+
+      F('Increment','conv.sensStep','pct')+
+      pick('Scenario tested','sensScenA')+
+    '</div></div>'+
+    '<div class="block"><h3>Junior pricing cases</h3><div class="fgrid c2">'+
+      F('Junior cost cases','conv.jrSensList','text',{affix:{suf:'%'},tip:'Comma-separated list of junior capital costs to test.'})+
+      pick('Scenario tested','sensScenB')+
+    '</div></div>'+
+    '<div class="block"><h3>Base rate cases</h3><div class="fgrid c2">'+
+      C('Show base rate sensitivity','meta.showSOFR')+
+      F('Base rate cases','conv.sofrList','text',{affix:{suf:'%'}})+
+    '</div></div>';
+}
+
+function secSettings(ctx){
+  return edHead('Model settings','Display conventions and model housekeeping. These do not change any calculation.')+
+    '<div class="block"><h3>Display</h3><div class="fgrid c2">'+
+      R('Display units','meta.precision',[['whole','$'],['k','$000s'],['m','$M']],{struct:true})+
+      '<div class="f"><label>LTC definition</label>'+
+        '<div class="boxnote" style="margin-top:0">LTC is measured as loan amount ÷ total development cost throughout the model.</div>'+
+      '</div>'+
+    '</div>'+
+    '<div class="boxnote">Percentages display to 1 decimal in the capital stack and 2 decimals for rates.\nCalculations always run on unrounded values; rounding is applied for display only.</div></div>'+
+    '<div class="block"><h3>Saving</h3>'+
+      '<div class="boxnote">Changes are saved to this browser automatically. Use Save to keep a named copy, or Copy shareable link to encode the full assumption set in the URL.</div>'+
+      '<div style="margin-top:11px;display:flex;gap:8px;flex-wrap:wrap">'+
+        '<button class="btn" data-act="save">Save named copy</button>'+
+        '<button class="btn" data-act="load">Load saved model</button>'+
+        '<button class="btn" data-act="link">Copy shareable link</button>'+
+        '<button class="btn" data-act="reset">Reset model</button>'+
+      '</div></div>';
+}
+
+/* ==========================================================================
+   ANALYSIS CANVAS — every figure below is read from calcScenario()
+   ========================================================================== */
+const STACK_COLORS={senior:'var(--stack-1)',junior:'var(--stack-2)',soft:'var(--stack-2b)',
+  pref:'var(--stack-3)',grant:'var(--stack-3b)',othersrc:'var(--stack-4)',tce:'var(--stack-4b)',
+  gp:'var(--stack-5)',lp:'var(--stack-6)'};
+/* bands light enough to carry navy text rather than white */
+const STACK_LIGHT={grant:1,othersrc:1,tce:1,gp:1,lp:1,gap:1};
+
+let LAST=null;   /* last computed results, for renderers that run out of band */
+
+function computeAll(){
+  const ctx=buildContext();
+  const rs=state.scenarios.map(sc=>calcScenario(sc,ctx));
+  LAST={ctx,rs,flags:validate(rs,ctx),confirms:confirmations(rs,ctx)};
+  return LAST;
+}
+
+function renderAnalysis(){
+  const {ctx,rs,flags,confirms}=computeAll();
+  renderMast(ctx,rs);
+  renderPresentOpen(ctx,rs);
+  renderComparison(ctx,rs);
+  renderScenarioColumns(ctx,rs);
+  renderSensitivity(ctx,rs);
+  renderSOFRTable(ctx,rs);
+  renderMatrix(ctx,rs);
+  renderPresentClose(ctx,rs,confirms);
+  renderStatus(ctx,rs,flags,confirms);
+  renderSummary(ctx,rs);
+  syncCalc(ctx,rs);
+}
+
+function renderMast(ctx,rs){
+  document.getElementById('mastSub').textContent=
+    [state.project.units?state.project.units+'-Unit':'',state.project.name,state.project.location,state.project.asOf]
+      .filter(Boolean).join('  ·  ');
+  const cpu=state.project.units>0? ctx.tdc/state.project.units : 0;
+  document.getElementById('mastMetrics').innerHTML=
+    '<div class="mast-m sm"><div class="k">Structures compared</div><div class="v">'+rs.length+'</div></div>'+
+    '<div class="mast-m sm"><div class="k">Cost per unit</div><div class="v">'+(cpu?fmtMoney(cpu,'whole'):'—')+'</div></div>'+
+    '<div class="mast-m"><div class="k">Total development cost</div><div class="v">'+fmtMoney(ctx.tdc)+'</div></div>';
+}
+
+/* ---------- presentation-mode framing (rendered from state, printed with the exhibit) ---------- */
+function renderPresentOpen(ctx,rs){
+  const el=document.getElementById('presentOpen'); if(!el) return;
+  const p=state.project;
+  const meta=[(+p.units>0? (+p.units).toLocaleString('en-US')+' units':''), p.location,
+    (p.asOf? 'as of '+p.asOf:''), 'total development cost '+fmtMoney(ctx.tdc),
+    rs.length+' financing structure'+(rs.length===1?'':'s')+' compared'].filter(Boolean).join('  ·  ');
+  el.innerHTML='<div class="pblock">'+
+    '<div class="eyebrow">Basis of preparation</div>'+
+    '<h2>'+esc(p.name||'Untitled project')+'</h2>'+
+    '<div class="pmeta">'+esc(meta)+'</div>'+
+    '<p>This is an illustrative exhibit. The assumptions behind it are modeled, not lender-confirmed, and senior '+
+      'debt is sized on loan-to-cost alone — no debt-service coverage, debt-yield or appraised-value test is applied.</p>'+
+    '<p>It answers one question: how the equity requirement and the cost of capital change across financing '+
+      'structures at a fixed total development cost of '+fmtMoney(ctx.tdc)+'.</p>'+
+  '</div>';
+}
+function renderPresentClose(ctx,rs,confirms){
+  const el=document.getElementById('presentClose'); if(!el) return;
+  const s=[];
+  if(rs.length>1){
+    const lps=rs.map(r=>r.lpRequired);
+    const lo=Math.min.apply(null,lps), hi=Math.max.apply(null,lps);
+    const loN=rs[lps.indexOf(lo)].sc.name, hiN=rs[lps.indexOf(hi)].sc.name;
+    s.push(hi-lo>5000
+      ? 'LP equity required runs from <b>'+fmtMoney(lo)+'</b> ('+esc(loN)+') to <b>'+fmtMoney(hi)+'</b> ('+esc(hiN)+
+        ') — a spread of '+fmtMoney(hi-lo)+', or '+fmtPct(ctx.tdc>0?(hi-lo)/ctx.tdc:0)+' of total development cost.'
+      : 'LP equity required is <b>'+fmtMoney(hi)+'</b> in every structure compared; the structures differ in cost, not in equity cheque.');
+    const bl=rs.filter(r=>r.blendedDebt);
+    if(bl.length>1){
+      const bLo=Math.min.apply(null,bl.map(r=>r.blendedDebt.lo));
+      const bHi=Math.max.apply(null,bl.map(r=>r.blendedDebt.hi));
+      s.push('Blended cost of debt across the same structures runs from '+fmtRate(bLo)+' to '+fmtRate(bHi)+
+        ' — a spread of '+fmtBps(bHi-bLo)+', before financing fees and interest carry.');
+    }
+    s.push('Lower leverage raises the equity requirement and lowers the blended cost of debt. Which side of that '+
+      'trade is preferable is a judgement, not a calculation, and this exhibit does not rank the structures on it.');
+  } else {
+    s.push('One structure is modeled. LP equity required is <b>'+fmtMoney(rs[0].lpRequired)+'</b> and blended cost of debt is '+
+      (rs[0].blendedDebt?rng(rs[0].blendedDebt,fmtRate):'—')+'. Add a second scenario to compare.');
+  }
+  const top=confirms.slice(0,3);
+  el.innerHTML='<div class="pblock">'+
+    '<div class="eyebrow">What the comparison shows</div>'+
+    s.map(x=>'<p>'+x+'</p>').join('')+
+    '<div class="eyebrow">What would change the conclusion</div>'+
+    '<p>'+confirms.length+' assumption'+(confirms.length===1?' is':'s are')+' modeled rather than confirmed'+
+      (top.length?'. The largest:':'.')+'</p>'+
+    (top.length?'<ul>'+top.map(c=>'<li>'+esc(c)+'</li>').join('')+'</ul>':'')+
+    '<p>A confirmed quote, a different leverage ceiling, or a junior tranche priced at the top of its range in place '+
+      'of the bottom would move the figures above. The full list sits behind the status pill.</p>'+
+  '</div>';
+}
+
+/* ---------- scenario comparison (above the charts) ---------- */
+function renderComparison(ctx,rs){
+  const cols=rs.length;
+  const rows=[
+    {k:'Senior LTC',    f:r=>fmtPct(r.seniorLTC)},
+    {k:'Junior capital',f:r=>r.juniorOn? fmtPct(r.juniorLTC)+' · '+JUNIOR_TYPES[r.sc.junior.type] : '—'},
+    {k:'Total leverage (incl. preferred equity)',f:r=>fmtPct(r.totalLeverage), tip:T.totalLev},
+    {k:'Common equity', f:r=>fmtMoney(r.commonEquity)+'  ('+fmtPct(r.commonEquityPct)+')'},
+    {k:'LP equity required',f:r=>fmtMoney(r.lpRequired)+(r.lpOverridden?'<sup>†</sup>':''), tip:T.lp},
+    {k:'Senior rate',   f:r=>fmtRate(r.seniorRate)},
+    {k:'Blended cost of debt',f:r=>r.blendedDebt?rng(r.blendedDebt,fmtRate):'—', tip:T.blended,
+      best:'min', val:r=>r.blendedDebt?r.blendedDebt.lo:null},
+    {k:'Financing fees',f:r=>r.feesEntered?fmtMoney(r.feesTotal):'Not entered',
+      best:'min', val:r=>r.feesEntered?r.feesTotal:null},
+    {k:'Capital providers',f:r=>String(r.providers)},
+    {k:'Sources vs. uses',f:r=>Math.abs(r.gap)<=5000?'✓ Balanced'
+      :'✕ '+fmtMoney(Math.abs(r.gap))+(r.gap>0?' short':' excess'),
+      best:'gap', tip:T.gap}
+  ];
+  let h='<table class="cmp"><thead><tr><th>Metric</th>'+
+    rs.map(r=>'<th>'+esc(r.sc.name)+'</th>').join('')+'</tr></thead><tbody>';
+  rows.forEach(row=>{
+    let bestIdx=-1;
+    if(row.best==='min' && cols>1){
+      const vals=rs.map(row.val);
+      if(vals.every(v=>v!==null&&isFinite(v)) && Math.max(...vals)-Math.min(...vals)>1e-9)
+        bestIdx=vals.indexOf(Math.min(...vals));
+    }
+    h+='<tr><td>'+esc(row.k)+infoIcon(row.tip,row.k)+'</td>'+
+      rs.map((r,i)=>{
+        let cls='';
+        if(row.best==='gap') cls = Math.abs(r.gap)<=5000 ? 'best' : 'bad';
+        else if(i===bestIdx) cls='best';
+        return '<td'+(cls?' class="'+cls+'"':'')+'>'+row.f(r)+'</td>';
+      }).join('')+'</tr>';
+  });
+  h+='</tbody></table>';
+  document.getElementById('cmpBody').innerHTML=
+    '<div class="tscroll">'+h+'</div>'+
+    (rs.some(r=>r.lpOverridden)?'<div class="footnote">† LP equity manually overridden; not calculated as the residual.</div>':'')+
+    '<div class="footnote">Highlighting marks the objectively lower figure only where lower is unambiguously cheaper — blended cost of debt, financing fees, and a reconciled sources and uses. Leverage, equity requirement and proceeds are not ranked: more leverage lowers the equity cheque and raises risk, and which side of that trade is preferable is a judgement, not a calculation.</div>';
+  document.getElementById('cmpHint').textContent=
+    'Reference rate '+(state.market.sofrLabel||'SOFR')+' at '+fmtRate(ctx.sofr)+'  ·  combined debt LTC ceiling '+fmtPct(ctx.maxCombinedLTC);
+}
+
+/* ---------- scenario columns ---------- */
+function renderScenarioColumns(ctx,rs){
+  const el=document.getElementById('scenOutputs');
+  /* cap at three columns and wrap; beyond three, per-column bar width collapses */
+  el.style.gridTemplateColumns='repeat('+Math.min(rs.length,3)+',minmax(0,1fr))';
+  el.innerHTML=rs.map((r,i)=>
+    '<div class="scencol">'+scenarioCard(r,i)+stackShell(i)+metricCards(r)+sourcesUses(r,ctx)+readNote(r,ctx)+'</div>'
+  ).join('');
+  rs.forEach((r,i)=>drawStack(r,i,ctx));
+  requestAnimationFrame(equalizeCards);      /* after layout, so the cards can be measured */
+}
+
+function scenarioCard(r,i){
+  const sc=r.sc, jr=r.juniorOn;
+  const item=(k,v,s)=>'<div class="sc-item"><div class="k">'+esc(k)+'</div><div class="v">'+v+'</div>'+
+    (s?'<div class="s">'+esc(s)+'</div>':'')+'</div>';
+  return '<div class="scard">'+
+    '<div class="scard-top"><div><h3>'+esc(sc.name)+'</h3><div class="tag">'+esc(sc.tag||'')+'</div></div>'+
+      '<div class="scard-actions edit-only">'+
+        '<button class="btn primary" data-act="editscen" data-i="'+i+'">Edit scenario</button>'+
+        '<div class="menu"><button class="btn icon" data-menu="card'+i+'" aria-label="Scenario actions">⋯</button>'+
+        '<div class="menu-pop" id="menu-card'+i+'" hidden>'+
+          '<button data-act="renamescen" data-i="'+i+'">Rename…</button>'+
+          '<button data-act="dupscen" data-i="'+i+'">Duplicate</button>'+
+          '<button data-act="presets" data-i="'+i+'">Apply preset…</button>'+
+          '<button data-act="resetscen" data-i="'+i+'">Reset to defaults…</button>'+
+          (state.scenarios.length>1?'<div class="sep"></div><button data-act="delscen" data-i="'+i+'">Delete scenario…</button>':'')+
+        '</div></div>'+
+      '</div></div>'+
+    '<div class="scard-body">'+
+      item('Senior debt', fmtMoney(r.seniorAmt), (sc.senior.lender||'Senior lender')+' · '+fmtPct(r.seniorLTC)+' LTC · '+
+        (sc.senior.rateType==='fixed'?fmtRate(r.seniorRate)+' fixed':'S + '+Math.round(sc.senior.spreadBps)+' bps'))+
+      item('Junior capital', jr?fmtMoney(r.juniorAmt):'None',
+        jr? JUNIOR_TYPES[sc.junior.type]+' · '+fmtPct(r.juniorLTC)+' of TDC · '+rng(r.juniorRate,fmtRate) : 'Senior debt and equity only')+
+      item('Sponsor sources', fmtMoney(r.sponsorTotal), fmtMoney(r.sponsorCredited)+' recognized as equity by the lender')+
+      item('LP equity required', fmtMoney(r.lpRequired), fmtPct(r.lpPctTDC)+' of TDC'+(r.lpOverridden?' · overridden':''))+
+    '</div></div>';
+}
+
+/* Every scenario summary card takes the height of the tallest, so the row of cards has one
+   top edge and one bottom edge. Shorter cards gain empty space at the foot rather than
+   shrinking; nothing inside them is touched. Width is already equal -- each card fills a
+   minmax(0,1fr) grid column.
+
+   The height is written in em, not px, so the box scales with the smaller print font size
+   instead of carrying a screen pixel value into the printed output. */
+function equalizeCards(){
+  const cards=[].slice.call(document.querySelectorAll('#scenOutputs .scard'));
+  const clear=()=>cards.forEach(c=>{ c.style.minHeight=''; });
+  if(cards.length<2){ clear(); return; }
+  clear();                                   /* measure natural height, not a previous pass */
+  const rects=cards.map(c=>c.getBoundingClientRect());
+  /* below the 1023px breakpoint the columns collapse to one, so there is no row to align
+     and a shared height would only add dead space */
+  const lefts={}; rects.forEach(r=>{ lefts[Math.round(r.left)]=1; });
+  if(Object.keys(lefts).length<2) return;
+  let tall=0; rects.forEach(r=>{ if(r.height>tall) tall=r.height; });
+  if(!(tall>0)) return;
+  const fs=parseFloat(getComputedStyle(cards[0]).fontSize)||13;
+  const em=(tall/fs).toFixed(3)+'em';
+  cards.forEach(c=>{ c.style.minHeight=em; });
+}
+
+function stackShell(i){
+  return '<div class="stackwrap" id="stack-'+i+'">'+
+    '<div class="riskrail"><div>↑ Higher risk / target return</div><div>↓ Higher priority / lower cost</div></div>'+
+    '<div class="axis"></div><div class="bar"></div><div></div><div class="notes"></div></div>';
+}
+
+function metricCards(r){
+  const m=(k,v,s,tip,cls)=>'<div class="metric'+(cls?' '+cls:'')+'"><div class="k">'+esc(k)+infoIcon(tip,k)+'</div>'+
+    '<div class="v">'+v+'</div><div class="s">'+esc(s||'')+'</div></div>';
+  /* junior capital cost folded into the blended-cost sub-line; senior LTC and senior rate
+     are already stated in the scenario card sub-line directly above this grid */
+  const blendSub = !r.juniorOn ? 'single tranche'
+    : (r.juniorIsDebt ? 'debt-weighted · junior '+rng(r.juniorRate,fmtRate)
+                      : 'senior only · preferred '+rng(r.juniorRate,fmtRate)+' outside debt');
+  return '<div class="metrics">'+
+    m('Combined debt LTC (excl. preferred)',fmtPct(r.combinedDebtLTC), r.prefEquity>0? fmtPct(r.totalLeverage)+' incl. preferred':'senior + junior debt',T.combined)+
+    m('Common equity',fmtPct(r.commonEquityPct),fmtMoney(r.commonEquity))+
+    m('Blended debt cost', r.blendedDebt?rng(r.blendedDebt,fmtRate):'—', blendSub,T.blended)+
+    m('LP equity required',fmtMoney(r.lpRequired),fmtPct(r.lpPctTDC)+' of TDC',
+      'Common equity requirement\n− recognized sponsor equity\n= LP equity required\n\n'+
+      fmtMoney(r.commonEquity)+' − '+fmtMoney(r.sponsorApplied)+' = '+fmtMoney(r.lpRequired))+
+  '</div>';
+}
+
+function sourcesUses(r,ctx){
+  const pc=v=>ctx.tdc>0?fmtPct(v/ctx.tdc,2):'—';
+  const rows=[];
+  const row=(l,v,c)=>rows.push('<tr><td>'+(c?'<i class="dot" style="background:'+c+'"></i>':'')+esc(l)+'</td><td>'+pc(v)+'</td><td>'+fmtMoney(v)+'</td></tr>');
+  row(r.sc.senior.type||'Senior debt',r.seniorAmt,STACK_COLORS.senior);
+  if(r.juniorDebt>0) row(r.sc.junior.label||JUNIOR_TYPES[r.sc.junior.type],r.juniorDebt,STACK_COLORS.junior);
+  if(r.prefEquity>0) row(r.sc.junior.label||JUNIOR_TYPES[r.sc.junior.type],r.prefEquity,STACK_COLORS.pref);
+  const SEG_KEY={soft:'soft',grant:'grant',tce:'tce',other:'othersrc'};
+  ctx.otherLines.slice()
+    .sort((a,b)=>OTHER_CLASSES[a.cls].order-OTHER_CLASSES[b.cls].order || a.idx-b.idx)
+    .forEach(l=>{ if(l.amount>0)
+      row((l.label||OTHER_CLASSES[l.cls].label)+'  '+String.fromCharCode(183)+'  '+OTHER_CLASSES[l.cls].label,
+          l.amount, STACK_COLORS[SEG_KEY[l.cls]]); });
+  row('Sponsor sources (GP)',ctx.sponsorTotal,STACK_COLORS.gp);
+  row('LP equity — to be raised',r.lpRequired,STACK_COLORS.lp);
+  const bal=Math.abs(r.gap)<=5000;
+  /* 2.1 -- the lender equity covenant is a separate test with its own pass/fail. It never
+     moves a dollar in or out of sources and uses. */
+  const cov='<table class="tbl" style="margin-top:12px"><caption>Lender equity covenant</caption>'+
+    '<thead><tr><th>Test</th><th>% of TDC</th><th>Amount</th></tr></thead><tbody>'+
+    '<tr><td>Lender-recognized equity'+(r.covBasis==='credited'?' (credited sources only)':' (all sponsor sources)')+
+      '</td><td>'+fmtPct(r.covEquityPct,2)+'</td><td>'+fmtMoney(r.covEquity)+'</td></tr>'+
+    '<tr><td>Required at the assumed leverage ceiling</td><td>'+fmtPct(r.covRequiredPct,2)+
+      '</td><td>'+fmtMoney(r.covRequired)+'</td></tr>'+
+    '<tr class="'+(r.covPass?'ok':'bad')+'"><td>'+(r.covPass?'✓ Covenant test — met':'✕ Covenant test — short')+
+      '</td><td>'+fmtPct(Math.abs(r.covEquityPct-r.covRequiredPct),2)+'</td><td>'+
+      fmtMoney(Math.abs(r.covEquity-r.covRequired))+'</td></tr></tbody></table>'+
+    '<div class="footnote">Equity credit governs this test only. Sources and uses counts every dollar '+
+      'that funds the project, credited or not.</div>';
+  return '<table class="tbl"><caption>Sources &amp; uses</caption>'+
+    '<thead><tr><th>Source</th><th>% of TDC</th><th>Amount</th></tr></thead><tbody>'+rows.join('')+
+    '<tr class="total"><td>Total sources</td><td>'+pc(r.sources)+'</td><td>'+fmtMoney(r.sources)+'</td></tr>'+
+    '<tr class="total"><td>Total uses (TDC)</td><td>'+pc(r.uses)+'</td><td>'+fmtMoney(r.uses)+'</td></tr>'+
+    '<tr class="'+(bal?'ok':'bad')+'"><td>'+(bal?'✓ Funding gap — balanced':(r.gap>0?'✕ Unfunded gap':'✕ Excess sources'))+
+      '</td><td>'+pc(Math.abs(r.gap))+'</td><td>'+fmtMoney(Math.abs(r.gap))+'</td></tr></tbody></table>'+cov;
+}
+
+function readNote(r,ctx){
+  const s=[];
+  s.push('Senior proceeds of <b>'+fmtMoney(r.seniorAmt)+'</b> at <b>'+fmtPct(r.seniorLTC)+'</b> LTC price at <b>'+fmtRate(r.seniorRate)+'</b>'+
+    (r.sc.senior.rateType==='fixed'?' fixed.':' ('+(state.market.sofrLabel||'base')+' '+fmtRate(r.baseRate)+' + '+Math.round(r.sc.senior.spreadBps)+' bps).'));
+  if(r.juniorOn){
+    /* 2.13 -- name the instrument, then state its classification separately. The old copy
+       said "Preferred equity" for any tranche with treatAsDebt off, mezzanine included. */
+    const jname=JUNIOR_TYPES[r.sc.junior.type]||'Junior capital';
+    s.push(jname+' of <b>'+fmtMoney(r.juniorAmt)+'</b> ('+fmtPct(r.juniorLTC)+' of TDC) at '+rng(r.juniorRate,fmtRate)+
+      (r.juniorIsDebt? ' lifts combined debt LTC to <b>'+fmtPct(r.combinedDebtLTC)+'</b> and blended debt cost to '+rng(r.blendedDebt,fmtRate)+'.'
+                     : ', classified outside total debt for this analysis; combined debt LTC stays at <b>'+fmtPct(r.combinedDebtLTC)+'</b> and total leverage including it is '+fmtPct(r.totalLeverage)+'.'));
+  } else s.push('No junior tranche: one lender, one set of loan documents, no intercreditor agreement.');
+  if(ctx.otherTotal>0){
+    s.push('Other project sources of <b>'+fmtMoney(ctx.otherTotal)+'</b>: '+
+      ctx.otherLines.filter(l=>l.amount>0).map(l=>
+        fmtMoney(l.amount)+' '+(l.label||OTHER_CLASSES[l.cls].label)+' ('+OTHER_CLASSES[l.cls].note+')').join('; ')+'.');
+  }
+  s.push('Common equity of <b>'+fmtMoney(r.commonEquity)+'</b> ('+fmtPct(r.commonEquityPct)+' of TDC) is funded by '+fmtMoney(r.sponsorApplied)+
+    ' of sponsor sources'+(ctx.otherTce>0?', '+fmtMoney(ctx.otherTce)+' of tax-credit equity':'')+
+    ' and <b>'+fmtMoney(r.lpRequired)+'</b> of LP equity'+
+    (r.lpResidual<-5000? ' — those sources exceed the requirement by '+fmtMoney(-r.lpResidual)+'.':'.'));
+  s.push('Lender-recognized equity is <b>'+fmtMoney(r.covEquity)+'</b> ('+fmtPct(r.covEquityPct)+' of TDC) against '+
+    fmtPct(r.covRequiredPct)+' implied by the leverage ceiling — '+(r.covPass?'the covenant test is met.':'short by '+fmtMoney(r.covShortfall)+'.'));
+  /* 2.13 -- an intercreditor agreement is a debt instrument. Equity-classified tranches are
+     governed inside the joint venture documents instead. */
+  const jrEq = r.juniorOn && !r.juniorIsDebt;
+  s.push('Capital providers: <b>'+r.providers+'</b>'+
+    (r.intercreditor
+      ? (jrEq? '; a recognition and standstill agreement within the joint venture documents is required.'
+             : '; an intercreditor agreement is required.')
+      : '.'));
+  return '<div class="boxnote" style="font-family:var(--sans);font-size:11.5px;line-height:1.6;white-space:normal">'+s.join(' ')+'</div>';
+}
+
+/* ---------- capital stack ---------- */
+function drawStack(r,i,ctx){
+  const wrap=document.getElementById('stack-'+i); if(!wrap) return;
+  const axis=wrap.querySelector('.axis'), bar=wrap.querySelector('.bar'), notes=wrap.querySelector('.notes');
+  const scale=r.stackScale>0?r.stackScale:1, tdc=ctx.tdc>0?ctx.tdc:1;
+  const H=v=>v/scale*100, L=v=>v/tdc*100;
+  let cum=0; const marks=[0], barHTML=[], noteHTML=[];
+  r.segments.forEach(s=>{
+    const b=H(cum), t=H(cum+s.amt), color=STACK_COLORS[s.key]||'var(--stack-3)';
+    const light=!!STACK_LIGHT[s.key];
+    const fg=s.key==='gap'?'var(--red)':(light?'var(--navy)':'#fff');
+    const tip=stackTip(r,s,ctx);
+    barHTML.push('<div class="seg'+(s.key==='gap'?' gapseg':'')+'" style="bottom:'+b+'%;height:'+(t-b)+'%;'+
+      (s.key==='gap'?'':'background:'+color+';')+'color:'+fg+'" tabindex="0" data-tiptitle="'+esc(s.label)+'" data-tip="'+esc(tip)+'">'+
+      ((t-b)>=8? '<div class="l1">'+esc(s.label)+'</div><div class="l2">'+fmtMoney(s.amt)+'</div><div class="l3">'+fmtPct(s.pct)+' of TDC</div>':'')+
+      '</div>');
+    noteHTML.push('<div class="note" data-top="'+t+'">'+
+      '<div class="nr">'+L(cum).toFixed(0)+'% → '+L(cum+s.amt).toFixed(0)+'%</div>'+
+      '<div class="nt"><i class="swatch" style="background:'+(s.key==='gap'?'var(--red)':color)+'"></i>'+esc(s.label)+'</div>'+
+      '<div class="nv">'+fmtMoney(s.amt)+' · '+fmtPct(s.pct)+'</div>'+
+      (s.detail?'<div class="nd">'+esc(s.detail)+'</div>':'')+'</div>');
+    cum+=s.amt; marks.push(cum);
+  });
+  /* deduplicate at the precision the mark is drawn at (whole percent), then drop any mark
+     within 3 percentage points of an already-kept neighbour. 0% and 100% always survive. */
+  const uniq=(function(){
+    const keep={0:1,100:1}, out=[];
+    const cand=[...new Set(marks.map(m=>Math.round(L(m))).concat([0,100]))].sort((a,b)=>a-b);
+    cand.forEach(m=>{
+      if(out.length && out[out.length-1]===m) return;
+      if(keep[m]){
+        while(out.length && !keep[out[out.length-1]] && m-out[out.length-1]<3) out.pop();
+        out.push(m); return;
+      }
+      if(out.length && m-out[out.length-1]<3) return;
+      out.push(m);
+    });
+    return out;
+  })();
+  axis.innerHTML=uniq.map(m=>'<div class="t" style="bottom:'+(m*tdc/scale)+'%">'+m+'%</div>').join('');
+  bar.innerHTML=uniq.map(m=>'<div class="gridline" style="bottom:'+(m*tdc/scale)+'%"></div>').join('')+
+    (scale>tdc*1.0001?'<div class="gridline" style="bottom:'+H(tdc)+'%;border-top:1px solid var(--red)"></div>':'')+
+    barHTML.reverse().join('');
+  notes.innerHTML=noteHTML.reverse().join('');
+  requestAnimationFrame(()=>decollide(notes));
+}
+function stackTip(r,s,ctx){
+  const sc=r.sc, L=[];
+  L.push('Amount: '+fmtMoney(s.amt));
+  L.push('% of TDC: '+fmtPct(s.pct,2));
+  if(s.key==='senior'){
+    L.push('Lender: '+(sc.senior.lender||'Not identified'));
+    L.push('Classification: senior secured debt');
+    L.push('LTC: '+fmtPct(r.seniorLTC,2));
+    if(sc.senior.rateType==='fixed') L.push('Rate: '+fmtRate(r.seniorRate)+' fixed');
+    else{ L.push('Spread: '+Math.round(sc.senior.spreadBps)+' bps');
+          L.push('Base: '+fmtRate(r.baseRate)+(sc.senior.useFloor?' (floored at '+fmtRate(sc.senior.floor)+')':''));
+          L.push('All-in rate: '+fmtRate(r.seniorRate)); }
+  } else if(s.key==='junior'||s.key==='pref'){
+    L.push('Instrument: '+JUNIOR_TYPES[sc.junior.type]);
+    L.push('Classification: '+(s.key==='junior'?'debt — inside combined debt LTC'
+      :'treated as equity for leverage purposes — outside total debt'));
+    L.push('% of TDC: '+fmtPct(r.juniorLTC,2));
+    L.push('Cost: '+rng(r.juniorRate,fmtRate));
+    L.push('Current pay: '+fmtPct(sc.junior.currentPay,0));
+  } else if(s.key==='gp'){
+    L.push('Classification: sponsor / GP common equity');
+    L.push('Lender-recognized credit: '+fmtMoney(ctx.sponsorCredited));
+    L.push('Share of common equity: '+fmtPct(r.gpShare));
+  } else if(s.key==='lp'){
+    L.push('Classification: LP common equity — residual requirement');
+    L.push('Share of common equity: '+fmtPct(r.lpShare));
+  } else if(s.key==='soft'||s.key==='grant'||s.key==='tce'||s.key==='othersrc'){
+    const ck={soft:'soft',grant:'grant',tce:'tce',othersrc:'other'}[s.key];
+    L.push('Class: '+OTHER_CLASSES[ck].label);
+    L.push('Treatment: '+OTHER_CLASSES[ck].note);
+    if(ck==='soft'||ck==='tce'){
+      const ln=ctx.otherLines.filter(l=>l.cls===ck && (l.label||OTHER_CLASSES[ck].label)===s.label)[0];
+      L.push((ck==='soft'?'Rate: ':'Required return: ')+(ln&&ln.rate!==null?fmtRate(ln.rate):'not entered'));
+    }
+  } else if(s.key==='gap'){
+    L.push('Sources are short of uses by this amount.');
+  }
+  return L.join('\n');
+}
+function decollide(notes){
+  const H=notes.clientHeight||452, els=[...notes.children];
+  els.forEach(el=>{ el.style.top=Math.max(0,Math.min(H-el.offsetHeight,H-(+el.dataset.top)/100*H))+'px'; });
+  for(let k=1;k<els.length;k++){
+    const min=parseFloat(els[k-1].style.top)+els[k-1].offsetHeight+6;
+    if(parseFloat(els[k].style.top)<min) els[k].style.top=min+'px';
+  }
+  for(let k=els.length-1;k>0;k--){
+    if(parseFloat(els[k].style.top)+els[k].offsetHeight>H){
+      els[k].style.top=(H-els[k].offsetHeight)+'px';
+      const max=parseFloat(els[k].style.top)-els[k-1].offsetHeight-6;
+      if(parseFloat(els[k-1].style.top)>max) els[k-1].style.top=Math.max(0,max)+'px';
+    }
+  }
+  /* P1 -- collision resolution needs pixels, but the result must not be pinned to the screen
+     height of .notes. Print shortens .stackwrap, and absolute pixel offsets computed against
+     452px then place notes below a 320px container. Convert to percentages of the container
+     so the layout scales with it. */
+  els.forEach(el=>{ el.style.top=(parseFloat(el.style.top)/H*100)+'%'; });
+}
+
+/* ---------- sensitivity ---------- */
+function renderSensitivity(ctx,rs){
+  /* 2.10 -- resolve by scenario id. Duplicating a scenario splices at i+1, so a positional
+     index silently repoints the selection at a different scenario. */
+  const findScen=(v,fallback)=>{
+    const byId=rs.findIndex(r=>String(r.sc.id)===String(v));
+    if(byId>=0) return byId;
+    const n=+v;                                  /* tolerate a positional value from an old save */
+    return (isFinite(n)&&n>=0&&n<rs.length) ? n : Math.min(fallback,rs.length-1);
+  };
+  const idxA=findScen(state.conv.sensScenA,0);
+  const idxB=findScen(state.conv.sensScenB,rs.length>1?1:0);
+  const A=rs[idxA], B=rs[idxB], ref=rs[idxA];
+  const min=+state.conv.sensMin,max=+state.conv.sensMax,step=Math.max(0.0025,+state.conv.sensStep);
+  /* Hard row cap. Without it a mistyped maximum (8500 for 85) builds tens of thousands of
+     rows, each one a calcScenario call, on the input event mid-keystroke. */
+  const MAX_SENS_ROWS=25;
+  const pts=[];
+  if(isFinite(min)&&isFinite(max)&&max>=min){
+    for(let v=min; v<=max+1e-9 && pts.length<MAX_SENS_ROWS; v+=step) pts.push(Math.round(v*10000)/10000);
+  }
+  const sensTruncated = isFinite(min)&&isFinite(max)&&max>=min&&
+    pts.length===MAX_SENS_ROWS && pts[pts.length-1] < max-1e-9;
+  const baseLTC=Math.round(A.seniorLTC*10000)/10000;
+  if(!pts.some(p=>Math.abs(p-baseLTC)<1e-6)){
+    if(pts.length>=MAX_SENS_ROWS) pts.pop();
+    pts.push(baseLTC);
+  }
+  pts.sort((a,b)=>a-b);
+  const rowsA=pts.map(p=>{
+    const c=calcScenario(A.sc,ctx,{seniorLTC:p}), base=Math.abs(p-A.seniorLTC)<1e-6;
+    /* 2.7 -- a row that breaches the leverage ceiling is not an ordinary row */
+    const over=c.totalLeverage > ctx.maxCombinedLTC + 1e-9;
+    /* 2.7 -- the sign of the gap is the whole point of the column */
+    const gap = Math.abs(c.gap)<=5000 ? 'Balanced'
+      : fmtMoney(Math.abs(c.gap)) + (c.gap>0 ? ' short' : ' excess');
+    return '<tr class="'+(base?'base':'')+(over?' over':'')+'"><td>'+fmtPct(p)+(base?' — base case':'')+
+      (over?'<sup>‡</sup>':'')+'</td><td>'+fmtMoney(c.seniorAmt)+
+      '</td><td>'+fmtMoney(c.commonEquity)+'</td><td>'+fmtMoney(c.sponsorApplied)+'</td><td>'+fmtMoney(c.lpRequired)+
+      '</td><td>'+gap+'</td></tr>';
+  }).join('');
+  const anyOver = pts.some(p=>calcScenario(A.sc,ctx,{seniorLTC:p}).totalLeverage > ctx.maxCombinedLTC + 1e-9);
+
+  /* 2.5 -- "equity saved" is a function of amounts, not of the junior rate, so it was a
+     constant column inside a grid where everything else varies. It is a single figure and
+     belongs in the note. And when the tranche sits outside total debt, the debt-weight table
+     answers nothing: five of seven columns are constant. Ask a different question instead. */
+  let rowsB,noteB,headB,colsB;
+  const jrCases=parseList(state.conv.jrSensList).map(x=>x/100);
+  if(!B.juniorOn){
+    colsB=4;
+    headB='<th>Junior cost</th><th>Blended</th>'+
+      '<th>Annualized interest (fully drawn)</th><th>vs. '+esc(ref.sc.name.split('—')[0].trim())+'</th>';
+    rowsB='<tr><td colspan="'+colsB+'" style="font-family:var(--sans);color:var(--muted)">'+esc(B.sc.name)+' has no junior tranche. Add junior capital to populate this table.</td></tr>';
+    noteB='';
+  } else if(B.juniorIsDebt){
+    /* debt weights are a function of amounts, not of the junior rate -- the same defect as
+       "equity saved". Constants are stated once in the note, not repeated down the grid. */
+    colsB=4;
+    headB='<th>Junior cost</th><th>Blended</th>'+
+      '<th>Annualized interest (fully drawn)</th><th>vs. '+esc(ref.sc.name.split('—')[0].trim())+'</th>';
+    rowsB=jrCases.map(p=>{
+      const c=calcScenario(B.sc,ctx,{juniorRate:p});
+      const inc=(c.annualDebtInterest&&ref.annualDebtInterest)?c.annualDebtInterest.lo-ref.annualDebtInterest.lo:null;
+      const base=B.juniorRate&&Math.abs(p-B.juniorRate.lo)<1e-6;
+      return '<tr class="'+(base?'base':'')+'"><td>'+fmtRate(p)+
+        '</td><td>'+(c.blendedDebt?fmtRate(c.blendedDebt.lo):'—')+'</td><td>'+(c.annualDebtInterest?fmtMoney(c.annualDebtInterest.lo):'—')+
+        '</td><td>'+(inc===null?'—':fmtMoney(inc))+'</td></tr>';
+    }).join('');
+    noteB='<div class="boxnote">Blended = (senior × senior rate + junior × junior rate + soft debt × its rate) ÷ total debt\n'+
+      'Debt weights do not move with junior pricing: '+fmtMoney(B.seniorAmt)+' ÷ '+fmtMoney(B.totalDebt)+' = '+fmtPct(B.seniorWt)+' senior  ·  '+
+      fmtMoney(B.juniorDebt)+' ÷ '+fmtMoney(B.totalDebt)+' = '+fmtPct(B.juniorWt)+' junior'+
+      (B.softDebt>0?'  ·  '+fmtMoney(B.softDebt)+' ÷ '+fmtMoney(B.totalDebt)+' = '+fmtPct(B.softWt)+' soft':'')+'\n'+
+      'Common equity does not move with junior pricing either. Against '+ref.sc.name+' this structure changes the '+
+      'common equity requirement by '+fmtMoney(ref.commonEquity-B.commonEquity)+' at every rate in the table.\n'+
+      'Interest is annualized on the full balance; it is not a draw-weighted carry figure.</div>';
+  } else {
+    /* tranche classified outside total debt: price it against the common equity behind it */
+    colsB=5;
+    headB='<th>Preferred return</th><th>Accrued over '+trimNum(ctx.years,2)+' yrs</th>'+
+      '<th>Balance + accrual</th><th>Accrual ÷ common equity</th><th>Cost of capital ahead of common</th>';
+    rowsB=jrCases.map(p=>{
+      const accr=B.prefEquity*p*ctx.years*B.avgOut;
+      const ahead=(B.seniorAmt+B.prefEquity)>0
+        ? (B.seniorAmt*B.seniorRate + B.prefEquity*p)/(B.seniorAmt+B.prefEquity) : null;
+      const base=B.juniorRate&&Math.abs(p-B.juniorRate.lo)<1e-6;
+      return '<tr class="'+(base?'base':'')+'"><td>'+fmtRate(p)+'</td><td>'+fmtMoney(accr)+
+        '</td><td>'+fmtMoney(B.prefEquity+accr)+'</td><td>'+(B.commonEquity>0?fmtPct(accr/B.commonEquity):'—')+
+        '</td><td>'+(ahead===null?'—':fmtRate(ahead))+'</td></tr>';
+    }).join('');
+    noteB='<div class="boxnote">'+esc(JUNIOR_TYPES[B.sc.junior.type]||'This tranche')+' is classified outside total debt, so it '+
+      'carries no debt weight and does not move blended debt cost. What its pricing does move is the capital '+
+      'standing ahead of common equity.\n'+
+      'Balance '+fmtMoney(B.prefEquity)+'  ·  common equity behind it '+fmtMoney(B.commonEquity)+
+      '  ·  accrual on '+fmtPct(B.avgOut,0)+' average outstanding over '+trimNum(ctx.years,2)+' yrs\n'+
+      'Accrual is simple, not compounded — an accruing or PIK balance costs more than the figures above.\n'+
+      'Against '+ref.sc.name+' this structure changes the common equity requirement by '+
+      fmtMoney(ref.commonEquity-B.commonEquity)+' at every rate in the table.</div>';
+  }
+  document.getElementById('sensGrid').innerHTML=
+    '<div><table class="tbl"><caption>'+esc(A.sc.name)+' — LP requirement vs. senior proceeds</caption>'+
+      '<thead><tr><th>Senior LTC</th><th>Senior loan</th><th>Common equity</th><th>Sponsor sources</th><th>LP required</th><th>Gap (short) / (excess)</th></tr></thead>'+
+      '<tbody>'+rowsA+'</tbody></table>'+
+      (anyOver?'<div class="footnote">‡ Total leverage at this senior LTC exceeds the assumed ceiling of '+
+        fmtPct(ctx.maxCombinedLTC)+'. Those rows are not fundable under the stated constraint.</div>':'')+
+      '<div class="boxnote">LP equity = TDC − senior debt − junior debt − preferred equity − recognized sponsor sources − other sources\n'+
+      'Sponsor equity held constant at '+fmtMoney(ctx.sponsorApplied)+' ('+state.conv.sponsorBasis+' basis).'+
+      (sensTruncated?'\nRange truncated at '+MAX_SENS_ROWS+' rows. Widen the increment to cover the full range.':'')+
+      '</div></div>'+
+    '<div><table class="tbl"><caption>'+esc(B.sc.name)+' — '+
+      (B.juniorOn&&!B.juniorIsDebt?'cost of the tranche standing ahead of common equity':'blended debt cost vs. junior pricing')+
+      '</caption><thead><tr>'+headB+'</tr></thead>'+
+      '<tbody>'+rowsB+'</tbody></table>'+noteB+'</div>';
+}
+
+function renderSOFRTable(ctx,rs){
+  const on=state.meta.showSOFR;
+  document.getElementById('sofrSection').style.display=on?'':'none';
+  document.getElementById('sofrHint').textContent='Cases set in the Sensitivity section';
+  if(!on) return;
+  const pts=parseList(state.conv.sofrList).map(x=>x/100);
+  document.getElementById('sofrBody').innerHTML='<div class="subgrid">'+rs.map(r=>{
+    const rows=pts.map(p=>{
+      const c=calcScenario(r.sc,ctx,{sofr:p}), base=Math.abs(p-ctx.sofr)<1e-6;
+      /* carry is only reported where the scenario actually models it; otherwise every
+         surface would have to disagree with the "carry not modeled" confirmation */
+      return '<tr class="'+(base?'base':'')+'"><td>'+fmtRate(p)+(base?' — base':'')+'</td><td>'+fmtRate(c.seniorRate)+
+        '</td><td>'+(c.blendedDebt?rng(c.blendedDebt,fmtRate):'—')+'</td><td>'+(r.carryOn?rng(c.carryTotal,fmtMoney):'Not modeled')+
+        '</td><td>'+(r.carryOn?rng({lo:c.carryTotal.lo+c.feesTotal,hi:c.carryTotal.hi+c.feesTotal},fmtMoney)
+                              :(c.feesEntered?fmtMoney(c.feesTotal)+' fees only':'Not modeled'))+'</td></tr>';
+    }).join('');
+    return '<div><table class="tbl"><caption>'+esc(r.sc.name)+'</caption><thead><tr><th>Base rate</th><th>Senior rate</th>'+
+      '<th>Blended debt cost</th><th>Interest carry</th><th>Carry + fees</th></tr></thead><tbody>'+rows+'</tbody></table>'+
+      '<div class="boxnote">'+(r.carryOn
+        ? 'Carry = balance × rate × '+trimNum(ctx.years,2)+' yrs × '+fmtPct(r.avgOut,0)+' average outstanding balance.'
+        : 'Interest carry is not modeled for this scenario. Turn on “Model interest carry” to populate the last two columns.')+
+      (r.sc.senior.rateType==='fixed'?'\nSenior tranche is fixed-rate and does not reprice.':'')+
+      (r.feesEntered?'':'\nNo lender or third-party fees entered.')+'</div></div>';
+  }).join('')+'</div>';
+}
+
+/* ---------- structural comparison ---------- */
+function renderMatrix(ctx,rs){
+  const rows=[
+    ['grp','Leverage'],
+    ['Senior LTC',r=>fmtPct(r.seniorLTC)],
+    ['Combined debt LTC (excl. preferred)',r=>fmtPct(r.combinedDebtLTC)],
+    ['Total leverage (incl. preferred equity)',r=>fmtPct(r.totalLeverage)],
+    ['Preferred equity component (difference)',r=>fmtPct(r.totalLeverage-r.combinedDebtLTC)],
+    ['Junior capacity at ceiling',r=>fmtMoney(r.juniorCapacity)+' ('+fmtPct(r.juniorCapacityPct)+')'],
+    ['grp','Capitalization'],
+    ['Senior debt',r=>fmtMoney(r.seniorAmt)],
+    ['Junior debt',r=>fmtMoney(r.juniorDebt)],
+    ['Soft / subordinate debt',r=>fmtMoney(r.softDebt)],
+    ['Preferred equity',r=>fmtMoney(r.prefEquity)],
+    ['Subsidy or grant',r=>fmtMoney(r.otherGrant)],
+    ['Tax-credit equity',r=>fmtMoney(r.otherTce)+(r.otherTce>0?' ('+fmtPct(r.tceShare)+' of common)':'')],
+    ['Other / unclassified sources',r=>fmtMoney(r.otherOther)],
+    ['Common equity',r=>fmtMoney(r.commonEquity)+' ('+fmtPct(r.commonEquityPct)+')'],
+    ['Sponsor sources',r=>fmtMoney(r.sponsorApplied)+' ('+fmtPct(r.gpShare)+' of common)'],
+    ['LP equity required',r=>fmtMoney(r.lpRequired)+(r.lpOverridden?'<sup>†</sup>':'')+' ('+fmtPct(r.lpShare)+' of common)'],
+    ['grp','Cost of capital'],
+    ['Senior rate',r=>fmtRate(r.seniorRate)],
+    ['Junior capital cost',r=>r.juniorOn?rng(r.juniorRate,fmtRate):'n/a'],
+    ['Blended cost of debt',r=>r.blendedDebt?rng(r.blendedDebt,fmtRate):'—'],
+    ['Weighted cost of capital',r=>r.wacc?rng(r.wacc,fmtRate):'N/A — equity return assumptions required'],
+    ['Financing fees',r=>r.feesEntered?fmtMoney(r.feesTotal):'Not entered'],
+    ['Interest carry',r=>r.carryOn?rng(r.carryTotal,fmtMoney):'Not modeled'],
+    ['grp','Lender equity covenant'],
+    ['Lender-recognized equity',r=>fmtMoney(r.covEquity)+' ('+fmtPct(r.covEquityPct)+' of TDC)'],
+    ['Required at the leverage ceiling',r=>fmtMoney(r.covRequired)+' ('+fmtPct(r.covRequiredPct)+' of TDC)'],
+    ['Covenant test',r=>r.covPass?'Met':'Short by '+fmtMoney(r.covShortfall)]
+  ];
+  let h='<table class="cmp"><thead><tr><th>Metric</th>'+rs.map(r=>'<th>'+esc(r.sc.name)+'</th>').join('')+'</tr></thead><tbody>';
+  rows.forEach(row=>{
+    if(row[0]==='grp'){ h+='<tr class="grp"><td colspan="'+(rs.length+1)+'">'+esc(row[1])+'</td></tr>'; return; }
+    h+='<tr><td>'+esc(row[0])+'</td>'+rs.map(r=>'<td>'+row[1](r)+'</td>').join('')+'</tr>';
+  });
+  h+='</tbody></table>';
+  document.getElementById('matrixBody').innerHTML='<div class="tscroll">'+h+'</div>'+
+    (rs.some(r=>r.lpOverridden)?'<div class="footnote">† LP equity manually overridden; not calculated as the residual.</div>':'');
+}
+
+/* ---------- status ---------- */
+function renderStatus(ctx,rs,flags,confirms){
+  const bal=rs.every(r=>Math.abs(r.gap)<=5000);
+  const full=rs.every(r=>Math.abs(r.stackPct-1)<=0.0005);
+  const errs=flags.filter(f=>f.lvl==='e').length, warns=flags.filter(f=>f.lvl==='w').length;
+  const pass=bal&&full&&!errs;
+  const warnFace=warns?'<span class="s warn">⚠ '+warns+'</span>':'';
+  /* Presentation Mode leads with disclosure, not with a build check; errors and warnings
+     stay visible behind it so a broken model can never present as finished. */
+  document.getElementById('statusPill').innerHTML = state.meta.mode==='present'
+    ? '<span class="s">'+confirms.length+' assumption'+(confirms.length===1?'':'s')+' to confirm</span>'+
+      (errs?'<span class="s err">✕ '+errs+'</span>':'')+warnFace
+    : '<span class="s '+(pass?'ok':'err')+'">'+(pass?'✓':'✕')+' '+
+        (errs?errs+' error'+(errs>1?'s':''):(bal&&full?'Checks pass':'Check model'))+'</span>'+
+      warnFace+
+      '<span class="s conf">· '+confirms.length+' to confirm</span>';
+  const row=(cls,tag,msg)=>'<div class="flagrow '+cls+'"><span class="fl">'+tag+'</span><span>'+esc(msg)+'</span></div>';
+  document.getElementById('statusPanel').innerHTML=
+    '<h4>Model checks</h4>'+
+    row(bal?'ok':'e', bal?'✓ Pass':'✕ Fail', bal?'Sources reconcile to uses in every scenario.':'Sources do not reconcile to uses.')+
+    row(full?'ok':'e', full?'✓ Pass':'✕ Fail', full?'Capital stack equals 100% of TDC in every scenario.':'Capital stack does not equal 100% of TDC.')+
+    row(errs?'e':'ok', errs?'✕ Fail':'✓ Pass', errs?errs+' formula or constraint error.':'No formula or constraint errors.')+
+    (flags.length? '<h4>Detail</h4>'+flags.map(f=>row(f.lvl,
+      f.lvl==='e'?'✕ Error':f.lvl==='w'?'⚠ Review':'· Note',f.msg)).join('') : '')+
+    '<h4>Assumptions requiring confirmation ('+confirms.length+')</h4>'+
+    confirms.map(c=>row('i','Confirm',c)).join('');
+}
+
+/* ---------- sticky summary rail ---------- */
+function renderSummary(ctx,rs){
+  const el=document.getElementById('summary'); if(!el) return;
+  const scenIdx=ui.section.indexOf('scen:')===0?+ui.section.split(':')[1]:-1;
+  const r=(scenIdx>=0&&rs[scenIdx])?rs[scenIdx]:null;
+  const row=(k,v,cls,big)=>'<div class="sum-row'+(big?' big':'')+'"><span class="k">'+esc(k)+'</span><span class="v'+(cls?' '+cls:'')+'">'+v+'</span></div>';
+  if(r){
+    const bal=Math.abs(r.gap)<=5000;
+    el.innerHTML=
+      '<div class="sum-row hd"><span class="k">'+esc(r.sc.name)+'</span></div>'+
+      row('Total development cost',fmtMoney(ctx.tdc))+
+      row('Senior debt',fmtMoney(r.seniorAmt))+
+      row('Junior capital',r.juniorOn?fmtMoney(r.juniorAmt):'—')+
+      row('Sponsor sources',fmtMoney(r.sponsorTotal))+
+      row('LP equity',fmtMoney(r.lpRequired),null,true)+
+      '<div class="sum-row hd" style="margin-top:14px"><span class="k">Metrics</span></div>'+
+      row('Combined LTC',fmtPct(r.totalLeverage))+
+      row('Common equity',fmtMoney(r.commonEquity)+' · '+fmtPct(r.commonEquityPct))+
+      row('Blended cost of debt',r.blendedDebt?rng(r.blendedDebt,fmtRate):'—')+
+      row('Sources / uses gap',bal?'Balanced':fmtMoney(Math.abs(r.gap)),bal?'ok':'bad');
+  } else {
+    el.innerHTML='<div class="sum-row hd"><span class="k">Model summary</span></div>'+
+      row('Total development cost',fmtMoney(ctx.tdc))+
+      row('Sponsor sources',fmtMoney(ctx.sponsorTotal))+
+      row('Recognized as equity',fmtMoney(ctx.sponsorCredited))+
+      row('Other project sources',fmtMoney(ctx.otherTotal))+
+      '<div class="sum-row hd" style="margin-top:14px"><span class="k">LP equity required</span></div>'+
+      rs.map(r=>row(r.sc.name.split('—')[0].trim(),fmtMoney(r.lpRequired))).join('')+
+      '<div class="sum-row hd" style="margin-top:14px"><span class="k">Sources / uses</span></div>'+
+      rs.map(r=>row(r.sc.name.split('—')[0].trim(),Math.abs(r.gap)<=5000?'Balanced':fmtMoney(Math.abs(r.gap)),
+        Math.abs(r.gap)<=5000?'ok':'bad')).join('');
+  }
+}
+
+/* ---------- calculated field sync ---------- */
+function syncCalc(ctx,rs){
+  const act=document.activeElement;
+  const set=(id,v)=>{const e=document.getElementById(id); if(!e||e===act) return;
+    if(e.tagName==='INPUT') e.value=v; else e.textContent=v;};
+  const txt=(id,v)=>{const e=document.getElementById(id); if(e) e.innerHTML=v;};
+  const cpu=state.project.units>0?ctx.tdc/state.project.units:0;
+  set('calc-cpu',dispOf(cpu,'money'));
+  set('calc-credited',dispOf(ctx.sponsorCredited,'money'));
+  if(rs[0]) set('calc-cap0',dispOf(rs[0].juniorCapacityPct,'pct'));
+  rs.forEach((r,i)=>{
+    set('calc-ltc-'+i,dispOf(r.seniorLTC,'pct'));
+    set('calc-amt-'+i,dispOf(r.seniorAmt,'money'));
+    set('calc-rate-'+i,dispOf(r.seniorRate,'rate'));
+    set('calc-jltc-'+i,dispOf(r.juniorLTC,'pct'));
+    set('calc-jamt-'+i,dispOf(r.juniorAmt,'money'));
+    set('calc-fees-'+i,dispOf(r.feesTotal,'money'));
+    set('calc-carry-'+i,dispOf(r.carryTotal?r.carryTotal.lo:0,'money'));
+    set('calc-wacc-'+i,r.wacc?dispOf(r.wacc.lo,'rate'):'');
+    txt('help-rate-'+i, r.sc.senior.rateType==='fixed'?'fixed rate'
+      : esc((state.market.sofrLabel||'base')+' '+fmtRate(r.baseRate)+' + '+Math.round(r.sc.senior.spreadBps)+' bps = '+fmtRate(r.seniorRate)));
+  });
+  txt('rateSummary', rs.map(r=>esc(r.sc.name)+':  '+fmtRate(r.seniorRate)+
+    (r.sc.senior.rateType==='fixed'?'  (fixed)':'  ('+fmtRate(r.baseRate)+' + '+Math.round(r.sc.senior.spreadBps)+' bps)')).join('\n'));
+  const sf=document.getElementById('sponsorFoot');
+  if(sf) sf.innerHTML='<div>Total sponsor sources</div><div></div><div>'+fmtMoney(ctx.sponsorTotal)+
+    '</div><div style="font-size:10px;text-align:center">'+fmtMoney(ctx.sponsorCredited)+' credited</div><div></div>';
+  const of=document.getElementById('otherFoot');
+  if(of) of.innerHTML='<div>Total other sources</div><div></div><div>'+fmtMoney(ctx.otherTotal)+'</div><div></div><div>'+
+    fmtPct(ctx.tdc>0?ctx.otherTotal/ctx.tdc:0,2)+'</div><div></div>';
+  state.other.forEach((o,i)=>{const e=document.getElementById('opct-'+i);
+    if(e) e.textContent=fmtPct(ctx.tdc>0?(+o.amount||0)/ctx.tdc:0,2);});
+}
+
+/* ==========================================================================
+   REFRESH / MODES
+   ========================================================================== */
+function refresh(structural){
+  clearTimeout(lightTimer); lightTimer=null;      /* a full render supersedes a pending one */
+  if(structural){
+    renderNav();
+    renderEditor();
+  }
+  renderAnalysis();
+}
+/* 2.12 -- every keystroke rebuilt the comparison table, all scenario columns and their
+   charts, both sensitivity grids, the matrix, the status panel and the summary rail via
+   innerHTML, then re-ran drawStack and decollide per scenario. Coalesce to one pass. */
+let lightTimer=null;
+function light(){
+  clearTimeout(lightTimer);
+  lightTimer=setTimeout(()=>{
+    lightTimer=null;
+    if(!document.getElementById('nav').contains(document.activeElement)) renderNav();
+    renderAnalysis();
+  },120);
+}
+function setMode(m){
+  state.meta.mode=m;
+  document.body.classList.toggle('present',m==='present');
+  document.getElementById('btnEdit').classList.toggle('on',m==='edit');
+  document.getElementById('btnPresent').classList.toggle('on',m==='present');
+  renderAnalysis();
+}
+
+/* ==========================================================================
+   MENUS, MODALS, TOOLTIP
+   ========================================================================== */
+function closeMenus(except){
+  document.querySelectorAll('.menu-pop').forEach(m=>{ if(m!==except) m.hidden=true; });
+  const sp=document.getElementById('statusPanel'); if(except!==sp) sp.hidden=true;
+  syncExpanded();
+}
+/* 2.9 -- aria-haspopup without aria-expanded tells a screen reader a popup exists but never
+   whether it is open. Keep the three triggers in step with their popups. */
+function syncExpanded(){
+  [['btnExport','exportMenu'],['btnMore','moreMenu'],['statusPill','statusPanel']].forEach(p=>{
+    const b=document.getElementById(p[0]), m=document.getElementById(p[1]);
+    if(b&&m) b.setAttribute('aria-expanded', m.hidden?'false':'true');
+  });
+}
+function showModal(o){
+  const host=document.getElementById('modalHost');
+  host.innerHTML='<div class="modal-bd" id="mbd"><div class="modal" role="dialog" aria-modal="true">'+
+    '<h3>'+esc(o.title)+'</h3>'+(o.sub?'<div class="sub">'+esc(o.sub)+'</div>':'')+
+    '<div class="mbody">'+o.body+'</div>'+
+    '<div class="mfoot">'+(o.cancel===false?'':'<button class="btn" id="mCancel">Cancel</button>')+
+      (o.confirm?'<button class="btn primary" id="mOk">'+esc(o.confirm)+'</button>':'')+'</div>'+
+    '</div></div>';
+  /* 2.9 -- remember what had focus, trap Tab inside the dialog, and hand focus back on
+     close. The trigger is often gone by then (a deleted row, a closed menu), so fall back
+     to the status pill rather than dropping focus on <body>. */
+  const opener=document.activeElement;
+  const dlg=host.querySelector('.modal');
+  const FOCUSABLE='button:not([disabled]),[href],input:not([disabled]),select:not([disabled]),textarea:not([disabled]),[tabindex]:not([tabindex="-1"])';
+  const close=()=>{
+    host.innerHTML='';
+    document.removeEventListener('keydown',trap,true);
+    /* the opener is often inside a menu that has since been closed, or a row that has
+       since been deleted; neither is a sensible place to leave focus */
+    const back=(opener&&document.contains(opener)&&!opener.closest('[hidden]'))
+      ? opener : document.getElementById('statusPill');
+    if(back&&back.focus) back.focus();
+  };
+  function trap(e){
+    if(e.key!=='Tab') return;
+    if(!host.contains(document.activeElement)){ e.preventDefault();
+      const f=dlg.querySelectorAll(FOCUSABLE); if(f.length) f[0].focus(); return; }
+    const f=[...dlg.querySelectorAll(FOCUSABLE)].filter(el=>!el.closest('[hidden]')&&el.type!=='hidden');
+    if(!f.length) return;
+    const first=f[0], last=f[f.length-1];
+    if(e.shiftKey && document.activeElement===first){ e.preventDefault(); last.focus(); }
+    else if(!e.shiftKey && document.activeElement===last){ e.preventDefault(); first.focus(); }
+  }
+  document.addEventListener('keydown',trap,true);
+  const bd=document.getElementById('mbd');
+  bd.onclick=e=>{ if(e.target===bd) close(); };
+  const c=document.getElementById('mCancel'); if(c) c.onclick=close;
+  const ok=document.getElementById('mOk'); if(ok) ok.onclick=()=>{ close(); o.onConfirm&&o.onConfirm(); };
+  if(o.onRender) o.onRender(close);
+  if(!host.contains(document.activeElement)){
+    const f=dlg.querySelectorAll(FOCUSABLE);
+    if(f.length) (ok||f[0]).focus();
+  }
+  return close;
+}
+function openPresetPicker(i){
+  const body=Object.keys(PRESETS).map(k=>
+    '<button class="btn" data-preset="'+k+'" style="display:block;width:100%;text-align:left;margin-bottom:7px;padding:10px 12px">'+
+    '<b style="color:var(--navy)">'+esc(PRESETS[k].label)+'</b></button>').join('');
+  showModal({title:'Apply preset',sub:'Choose a structure. You will see exactly what changes before anything is overwritten.',
+    body:body,cancel:true,onRender:(close)=>{
+      document.querySelectorAll('[data-preset]').forEach(b=>b.onclick=()=>{ close(); previewPreset(i,b.dataset.preset); });
+    }});
+}
+/* 2.11 -- apply the preset to a clone, then diff the clone against the scenario. The modal
+   and the confirm handler read from the same function, so the list can never drift from what
+   is actually written. The old hand-written list missed senior.type, senior.mode,
+   senior.rateType, junior.mode, junior.rateMode, junior.currentPay, the junior.label wipe,
+   and treatAsDebt -- a change in leverage classification -- among others. */
+function applyPresetTo(sc,p){
+  const s=clone(sc);
+  Object.assign(s.senior,p.senior);
+  if(s.senior.mode==='ltc') s.senior.amount=state.project.tdc*s.senior.ltc;
+  Object.assign(s.junior,{type:'none',label:''},p.junior);
+  if(s.junior.type!=='none'&&s.junior.mode==='ltc') s.junior.amount=state.project.tdc*s.junior.ltc;
+  s.tag=p.tag||s.tag;
+  return s;
+}
+const PRESET_LABELS={
+  'senior.lender':'Senior lender','senior.type':'Facility type','senior.mode':'Senior sizing basis',
+  'senior.ltc':'Senior LTC','senior.amount':'Senior loan amount','senior.rateType':'Senior base rate',
+  'senior.spreadBps':'Senior spread','senior.fixedRate':'Senior fixed rate','senior.origBps':'Origination fee',
+  'senior.exitBps':'Exit fee','senior.extBps':'Extension fee','senior.unusedBps':'Unused / commitment fee',
+  'junior.type':'Junior capital type','junior.label':'Instrument label','junior.mode':'Junior sizing basis',
+  'junior.ltc':'Junior % of TDC','junior.amount':'Junior amount','junior.rateMode':'Junior pricing basis',
+  'junior.rate':'Junior rate','junior.rateLo':'Junior rate — low','junior.rateHi':'Junior rate — high',
+  'junior.rangeCase':'Case shown','junior.treatAsDebt':'Treated as debt for leverage',
+  'junior.currentPay':'Current-pay portion','junior.termMonths':'Junior term',
+  'junior.origBps':'Junior origination','junior.exitBps':'Junior exit fee','tag':'Structure tag'
+};
+function presetKind(path){
+  if(path==='junior.type') return 'jtype';
+  if(/(treatAsDebt)$/.test(path)) return 'bool';
+  if(/(ltc|currentPay)$/.test(path)) return 'pct';
+  if(/(rate|rateLo|rateHi|fixedRate)$/.test(path)) return 'rate';
+  if(/Bps$/.test(path)) return 'bps';
+  if(/(amount)$/.test(path)) return 'money';
+  if(/(termMonths)$/.test(path)) return 'num';
+  return 'text';
+}
+function previewPreset(i,key){
+  const p=PRESETS[key], sc=state.scenarios[i];
+  const next=applyPresetTo(sc,p);
+  const diffs=[];
+  const fmtBy=(kind,v)=>kind==='money'?fmtMoney(v):kind==='pct'?fmtPct(v):kind==='rate'?fmtRate(v):
+    kind==='bps'?Math.round(v)+' bps':kind==='bool'?(v?'Yes':'No'):
+    kind==='jtype'?(JUNIOR_TYPES[v]||String(v)):String(v===''||v==null?'—':v);
+  ['senior','junior'].forEach(grp=>{
+    Object.keys(next[grp]).forEach(k=>{
+      const path=grp+'.'+k, oldV=sc[grp][k], newV=next[grp][k];
+      if(String(oldV)===String(newV)) return;
+      diffs.push([PRESET_LABELS[path]||path, fmtBy(presetKind(path),oldV), fmtBy(presetKind(path),newV)]);
+    });
+  });
+  if(String(sc.tag)!==String(next.tag)) diffs.push([PRESET_LABELS.tag,String(sc.tag||'—'),String(next.tag||'—')]);
+  const body=diffs.length
+    ? '<div class="diff">'+diffs.map(d=>'<span class="lb">'+esc(d[0])+'</span><span class="old">'+esc(d[1])+
+        '</span><span class="ar">→</span><span class="new">'+esc(d[2])+'</span>').join('')+'</div>'+
+      '<div class="footnote">Everything else in this scenario is left untouched, and every field stays editable afterwards.</div>'
+    : '<p style="font-size:12px;color:var(--muted)">This preset matches the scenario\u2019s current assumptions. Nothing would change.</p>';
+  showModal({title:'Apply "'+PRESETS[key].label+'" to '+sc.name+'?',
+    sub:diffs.length?diffs.length+' assumption'+(diffs.length>1?'s':'')+' will change:':'',
+    body:body, confirm:diffs.length?'Apply preset':null,
+    onConfirm:()=>{
+      /* same function that produced the diff, so the modal cannot understate the change */
+      state.scenarios[i]=applyPresetTo(state.scenarios[i],p);
+      commit(); refresh(true);
+    }});
+}
+
+/* tooltip engine */
+(function(){
+  const tip=document.getElementById('tip');
+  let cur=null;
+  function show(el){
+    const t=el.getAttribute('data-tip'); if(!t) return;
+    const title=el.getAttribute('data-tiptitle');
+    tip.innerHTML=(title?'<span class="th">'+esc(title)+'</span>':'')+esc(t);
+    tip.classList.add('on');
+    const r=el.getBoundingClientRect(), tr=tip.getBoundingClientRect();
+    let left=r.left+r.width/2-tr.width/2, top=r.top-tr.height-8;
+    if(top<6) top=r.bottom+8;
+    tip.style.left=Math.max(8,Math.min(innerWidth-tr.width-8,left))+'px';
+    tip.style.top=top+'px'; cur=el;
+  }
+  function hide(){ tip.classList.remove('on'); cur=null; }
+  document.addEventListener('mouseover',e=>{ const el=e.target.closest('[data-tip]'); if(el&&el!==cur) show(el); });
+  document.addEventListener('mouseout',e=>{ if(cur&&!cur.contains(e.relatedTarget)) hide(); });
+  document.addEventListener('focusin',e=>{ const el=e.target.closest('[data-tip]'); if(el) show(el); });
+  document.addEventListener('focusout',()=>hide());
+  window.addEventListener('scroll',hide,true);
+})();
+
+/* ==========================================================================
+   EVENTS
+   ========================================================================== */
+document.addEventListener('input',e=>{
+  const t=e.target,p=t.dataset.path; if(!p) return;
+  const k=t.dataset.kind||'text';
+  if(k.indexOf('slider-')===0){
+    const kk=k.slice(7);
+    setPath(state,p,(kk==='pct'||kk==='rate')?parseFloat(t.value)/100:parseFloat(t.value));
+    document.querySelectorAll('input[type=text][data-path="'+p+'"]').forEach(x=>{ if(x!==document.activeElement) x.value=dispOf(getPath(state,p),kk); });
+    commit(); light(); return;
+  }
+  if(t.type==='checkbox'||t.tagName==='SELECT') return;
+  setPath(state,p,parseKind(t.value,k));
+  document.querySelectorAll('input[type=range][data-path="'+p+'"]').forEach(x=>{
+    const kk=k; x.value=(kk==='pct'||kk==='rate')?getPath(state,p)*100:getPath(state,p); });
+  commit(); light();
+});
+document.addEventListener('change',e=>{
+  const t=e.target,p=t.dataset.path; if(!p) return;
+  if(t.type==='checkbox'){ setPath(state,p,t.checked); commit(); refresh(!!t.dataset.struct); return; }
+  if(t.tagName==='SELECT'){
+    setPath(state,p,t.value);
+    if(/\.junior\.type$/.test(p)){
+      const j=getPath(state,p.replace(/\.type$/,''));
+      j.treatAsDebt=!!DEBT_BY_DEFAULT[t.value];
+      if(t.value!=='none'&&!j.label) j.label=JUNIOR_TYPES[t.value];
+    }
+    if(/^conv\.sensScen/.test(p)) { commit(); light(); return; }
+    commit(); refresh(!!t.dataset.struct||/\.junior\.type$/.test(p)||/\.rateType$/.test(p)||/^meta\.precision$/.test(p));
+    return;
+  }
+  if(t.type==='radio'){
+    const m=p.match(/^scenarios\.(\d+)\.(senior|junior)\.mode$/);
+    if(m){   /* carry the current value across so LTC and amount can never disagree */
+      const r=calcScenario(state.scenarios[+m[1]],buildContext());
+      const sec=getPath(state,'scenarios.'+m[1]+'.'+m[2]), isSr=m[2]==='senior';
+      if(t.value==='amount') sec.amount=isSr?r.seniorAmt:r.juniorAmt;
+      else sec.ltc=isSr?r.seniorLTC:r.juniorLTC;
+    }
+    setPath(state,p,t.value); commit(); refresh(true); return;
+  }
+});
+document.addEventListener('focusin',e=>{
+  const t=e.target,p=t.dataset.path;
+  if(!p||t.tagName!=='INPUT'||t.type!=='text'||t.dataset.calc) return;
+  const ov=getPath(state,p);
+  t.dataset.orig=JSON.stringify(ov===undefined?null:ov);
+  t.value=rawOf(getPath(state,p),t.dataset.kind||'text');
+  if(t.select) t.select();
+});
+document.addEventListener('focusout',e=>{
+  const t=e.target,p=t.dataset.path;
+  /* calculated fields render as <output> and never reach this handler */
+  if(!p||t.tagName!=='INPUT'||t.type!=='text') return;
+  t.value=dispOf(getPath(state,p),t.dataset.kind||'text');
+});
+document.addEventListener('click',e=>{
+  const menuBtn=e.target.closest('[data-menu]');
+  if(menuBtn){ const m=document.getElementById('menu-'+menuBtn.dataset.menu);
+    const willOpen=m.hidden; closeMenus(); m.hidden=!willOpen; e.stopPropagation(); return; }
+  if(!e.target.closest('.menu')&&!e.target.closest('.statuswrap')) closeMenus();
+
+  const nav=e.target.closest('[data-sec]');
+  if(nav&&nav.closest('#nav')){ ui.section=nav.dataset.sec; refresh(true); return; }
+
+  const tg=e.target.closest('[data-toggle]');
+  if(tg){ setPath(state,tg.dataset.toggle,!getPath(state,tg.dataset.toggle)); commit(); refresh(true); return; }
+  const del=e.target.closest('[data-del]');
+  if(del){ const [arr,idx]=del.dataset.del.split('.'); state[arr].splice(+idx,1); commit(); refresh(true); return; }
+  const clr=e.target.closest('[data-clear]');
+  if(clr){ setPath(state,clr.dataset.clear,null); commit(); refresh(true); return; }
+
+  const act=e.target.closest('[data-act]'); if(!act) return;
+  const i=+act.dataset.i;
+  const A=act.dataset.act;
+  closeMenus();
+  if(A==='addscen'){ const s=scenarioB(); s.id=uid();
+    s.name='Scenario '+String.fromCharCode(65+state.scenarios.length); s.tag='';
+    state.scenarios.push(s); ui.section='scen:'+(state.scenarios.length-1); commit(); refresh(true); }
+  else if(A==='editscen'){ setMode('edit'); ui.section='scen:'+i; refresh(true);
+    const ws=document.getElementById('workspace');
+    if(ws.scrollIntoView) ws.scrollIntoView({behavior:'smooth',block:'start'}); }
+  else if(A==='dupscen'){ const c=clone(state.scenarios[i]); c.id=uid(); c.name=state.scenarios[i].name+' (copy)';
+    state.scenarios.splice(i+1,0,c); ui.section='scen:'+(i+1); commit(); refresh(true); }
+  else if(A==='renamescen'){
+    showModal({title:'Rename scenario',body:'<div class="f"><label>Scenario name</label><div class="ip text">'+
+      '<input type="text" id="renameIn" value="'+esc(state.scenarios[i].name)+'"></div></div>',
+      confirm:'Rename',onRender:(close)=>{
+        const inp=document.getElementById('renameIn'); inp.focus(); inp.select();
+        document.getElementById('mOk').onclick=()=>{
+          state.scenarios[i].name=inp.value.trim()||state.scenarios[i].name;
+          close(); commit(); refresh(true); };
+      }});
+  }
+  else if(A==='resetscen'){
+    showModal({title:'Reset scenario?',sub:'"'+state.scenarios[i].name+'" returns to the illustrative defaults. Other scenarios are untouched.',
+      body:'',confirm:'Reset scenario',onConfirm:()=>{ state.scenarios[i]=i===0?scenarioA():scenarioB(); commit(); refresh(true); }});
+  }
+  else if(A==='delscen'){
+    showModal({title:'Delete scenario?',sub:'"'+state.scenarios[i].name+'" will be removed. This can be undone with Ctrl+Z.',
+      body:'',confirm:'Delete scenario',onConfirm:()=>{ state.scenarios.splice(i,1);
+        ui.section='scen:0'; commit(); refresh(true); }});
+  }
+  else if(A==='presets'){ openPresetPicker(i); }
+  else if(A==='addjunior'){ const j=state.scenarios[i].junior;
+    j.type='mezz'; j.label=JUNIOR_TYPES.mezz; j.treatAsDebt=true;
+    if(!(j.ltc>0)) j.ltc=0.10; commit(); refresh(true); }
+  else if(A==='addsponsor'){ state.sponsor.push({id:uid(),label:'New sponsor source',cls:'cash',amount:0,credit:true});
+    commit(); refresh(true); }
+  else if(A==='addother'){ state.other.push({id:uid(),label:'New project source',cls:'other',amount:0,rate:null}); commit(); refresh(true); }
+  else if(A==='save') doSave();
+  else if(A==='load') doLoad();
+  else if(A==='link') doLink();
+  else if(A==='reset') doReset();
+  else if(A==='json') download('capital-stack-assumptions.json',JSON.stringify(state,null,2),'application/json');
+  else if(A==='csv') exportCSV();
+  else if(A==='print') window.print();
+  else if(A.indexOf('prec-')===0){ state.meta.precision=A.slice(5); commit(); refresh(true); }
+});
+
+/* ==========================================================================
+   PERSISTENCE / EXPORT
+   ========================================================================== */
+function setSaveInd(text,on){ const s=document.getElementById('saveInd'); if(!s) return;
+  s.classList.toggle('on',!!on); s.textContent=text; }
+function showSaving(){ setSaveInd('Saving…',false); }
+function autosave(){
+  try{ localStorage.setItem(AUTOKEY,JSON.stringify(state)); setSaveInd('All changes saved',true); }
+  catch(err){ setSaveInd('Unable to save',false); }
+}
+/* ---- named saves: separate store from autosave, never overwritten silently ---- */
+function savedModels(){
+  try{ const v=JSON.parse(localStorage.getItem(SAVEKEY)||'[]'); return Array.isArray(v)?v:[]; }
+  catch(e){ return []; }
+}
+function writeSavedModels(list){
+  try{ localStorage.setItem(SAVEKEY,JSON.stringify(list)); return true; }
+  catch(e){ return false; }
+}
+function storageFailed(){
+  showModal({title:'Unable to write to browser storage',
+    body:'<div style="font-size:12px;color:var(--ink-2);line-height:1.6">Storage is full or unavailable — some browsers block it in private windows. '+
+      'Nothing was changed. Use Export JSON or Copy shareable link to keep this model outside the browser.</div>',
+    cancel:false, confirm:'Close'});
+}
+function suggestedSaveName(){
+  const proj=state.project.name || (state.project.units? state.project.units+'-Unit Development':'Untitled Project');
+  const label=state.scenarios.length===1 ? state.scenarios[0].name : 'Base Case';
+  return proj+' — '+label;
+}
+function fmtSavedAt(iso){
+  const d=new Date(iso);
+  if(isNaN(d)) return '';
+  return d.toLocaleDateString('en-US',{month:'long',day:'numeric',year:'numeric'})+' at '+
+    d.toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'});
+}
+function uniqueSaveName(base,list){
+  let n=2, name=base+' ('+n+')';
+  while(list.some(r=>r.name===name)){ n++; name=base+' ('+n+')'; }
+  return name;
+}
+function flashSaved(name){
+  const btn=document.getElementById('btnSave');
+  if(btn){ const orig='Save'; btn.textContent='Saved';
+    setTimeout(()=>{ btn.textContent=orig; },1800); }
+  setSaveInd('Saved: '+name,true);
+}
+function doSave(){
+  const multi=state.scenarios.length>1;
+  const suggested=suggestedSaveName();
+  const body='<div class="f"><label>'+(multi?'Version name':'Scenario name')+'</label><div class="ip text">'+
+      '<input type="text" id="saveIn" value="'+esc(suggested)+'" autocomplete="off"></div>'+
+      '<div class="save-err" id="saveErr" hidden>Please enter a scenario name.</div>'+
+    '</div>';
+  showModal({title:multi?'Save Model Version':'Save Scenario',cancel:true,body:body,confirm:'Save',onRender:(close)=>{
+    const inp=document.getElementById('saveIn'), err=document.getElementById('saveErr'), ok=document.getElementById('mOk');
+    const validate=()=>{ const v=inp.value.trim(); const good=v.length>0; ok.disabled=!good; if(good) err.hidden=true; return v; };
+    inp.oninput=validate; inp.focus(); inp.select(); validate();
+    inp.addEventListener('keydown',e=>{ if(e.key==='Enter'){ e.preventDefault(); if(!ok.disabled) ok.onclick(); } });
+    ok.onclick=()=>{
+      const name=validate();
+      if(!name){ err.hidden=false; return; }
+      const list=savedModels(), existing=list.find(r=>r.name===name);
+      if(existing){ close(); confirmOverwrite(name,list); return; }
+      finalizeSave(name,close,err,ok);
+    };
+  }});
+}
+function confirmOverwrite(name,list){
+  showModal({title:'Save conflict',
+    sub:'A saved version named "'+name+'" already exists.',
+    body:'<div style="font-size:12px;color:var(--muted);line-height:1.6">Choose whether to overwrite it or save this as a new version.</div>',
+    cancel:true,confirm:'Overwrite',
+    onRender:(close)=>{
+      const foot=document.querySelector('#mbd .mfoot');
+      const nb=document.createElement('button'); nb.className='btn'; nb.textContent='Save as New Version';
+      nb.onclick=()=>{ const uniq=uniqueSaveName(name,list); close(); finalizeSave(uniq,()=>{}); };
+      foot.insertBefore(nb,foot.firstChild);
+    },
+    onConfirm:()=>{ const existing=list.find(r=>r.name===name); finalizeSave(name,()=>{},null,null,existing&&existing.id); }
+  });
+}
+function finalizeSave(name,close,err,ok,overwriteId){
+  if(ok){ ok.disabled=true; ok.textContent='Saving…'; }
+  try{
+    const list=savedModels();
+    const rec={ id:overwriteId||('save_'+Date.now()), name:name, savedAt:new Date().toISOString(),
+      projectName:state.project.name||'', state:clone(state) };
+    const idx=list.findIndex(r=>r.id===rec.id);
+    if(idx>=0) list[idx]=rec; else list.push(rec);
+    if(!writeSavedModels(list)) throw new Error('storage unavailable');
+    close();
+    flashSaved(name);
+  }catch(e){
+    if(err){ err.hidden=false; err.textContent='Unable to save this scenario. Please try again.'; }
+    if(ok){ ok.disabled=false; ok.textContent='Save'; }
+  }
+}
+function doLoad(){
+  const list=savedModels().slice().sort((a,b)=>new Date(b.savedAt)-new Date(a.savedAt));
+  const body=list.length? list.map(r=>
+      '<div class="saverow" data-id="'+esc(r.id)+'">'+
+        '<div class="saverow-main">'+
+          '<div class="saverow-name">'+esc(r.name)+'</div>'+
+          '<div class="saverow-meta">Saved '+esc(fmtSavedAt(r.savedAt))+(r.projectName?' · '+esc(r.projectName):'')+'</div>'+
+        '</div>'+
+        '<div class="saverow-actions">'+
+          '<button class="btn" data-load="'+esc(r.id)+'">Load</button>'+
+          '<button class="btn icon" data-rename="'+esc(r.id)+'" title="Rename" aria-label="Rename">✎</button>'+
+          '<button class="btn icon" data-dup="'+esc(r.id)+'" title="Duplicate" aria-label="Duplicate">⧉</button>'+
+          '<button class="btn icon" data-drop="'+esc(r.id)+'" title="Delete" aria-label="Delete">×</button>'+
+        '</div>'+
+      '</div>').join('')
+    : '<p style="font-size:12px;color:var(--muted)">No saved versions in this browser yet. Use Save to keep a named version.</p>';
+  showModal({title:'Load saved model',cancel:true,body:body,onRender:(close)=>{
+    document.querySelectorAll('[data-load]').forEach(b=>b.onclick=()=>{
+      const rec=savedModels().find(r=>r.id===b.dataset.load); if(!rec) return;
+      state=migrate(rec.state); close(); pushHistory(); autosave();
+      ui.section='project'; setMode(state.meta.mode==='present'?'present':'edit'); refresh(true); });
+    document.querySelectorAll('[data-dup]').forEach(b=>b.onclick=()=>{
+      const list2=savedModels(), rec=list2.find(r=>r.id===b.dataset.dup); if(!rec) return;
+      const copy={id:'save_'+Date.now(),name:uniqueSaveName(rec.name+' (copy)',list2),
+        savedAt:new Date().toISOString(),projectName:rec.projectName,state:rec.state};
+      list2.push(copy);
+      if(!writeSavedModels(list2)){ close(); storageFailed(); return; }
+      close(); doLoad(); });
+    document.querySelectorAll('[data-rename]').forEach(b=>b.onclick=()=>{
+      close(); openRenameSave(b.dataset.rename); });
+    document.querySelectorAll('[data-drop]').forEach(b=>b.onclick=()=>{
+      const rec=savedModels().find(r=>r.id===b.dataset.drop); if(!rec) return;
+      close();
+      showModal({title:'Delete saved version?',sub:'"'+rec.name+'" will be permanently removed.',
+        body:'',cancel:true,confirm:'Delete',onConfirm:()=>{
+          if(!writeSavedModels(savedModels().filter(r=>r.id!==rec.id))){ storageFailed(); return; }
+          doLoad(); }});
+    });
+  }});
+}
+function openRenameSave(id){
+  const rec=savedModels().find(r=>r.id===id); if(!rec) return;
+  showModal({title:'Rename saved version',body:'<div class="f"><label>Name</label><div class="ip text">'+
+      '<input type="text" id="saveRenameIn" value="'+esc(rec.name)+'" autocomplete="off"></div>'+
+      '<div class="save-err" id="saveRenameErr" hidden>Please enter a scenario name.</div></div>',
+    cancel:true,confirm:'Rename',onRender:(close)=>{
+      const inp=document.getElementById('saveRenameIn'), err=document.getElementById('saveRenameErr'), ok=document.getElementById('mOk');
+      const validate=()=>{ const v=inp.value.trim(); const good=v.length>0; ok.disabled=!good; if(good) err.hidden=true; return v; };
+      inp.oninput=validate; inp.focus(); inp.select(); validate();
+      inp.addEventListener('keydown',e=>{ if(e.key==='Enter'){ e.preventDefault(); if(!ok.disabled) ok.onclick(); } });
+      ok.onclick=()=>{
+        const name=validate(); if(!name){ err.hidden=false; return; }
+        const list=savedModels(), idx=list.findIndex(r=>r.id===id);
+        if(idx>=0){ list[idx]=Object.assign({},list[idx],{name:name});
+          if(!writeSavedModels(list)){ close(); storageFailed(); return; } }
+        close(); doLoad();
+      };
+    }});
+}
+function doLink(){
+  const url=location.origin+location.pathname+'#m='+encodeState();
+  if(navigator.clipboard) navigator.clipboard.writeText(url).then(()=>{ setSaveInd('Link copied',true); });
+  location.hash='m='+encodeState();
+}
+function doReset(){
+  showModal({title:'Reset model?',sub:'Every assumption returns to the illustrative exhibit defaults. This can be undone with Ctrl+Z.',
+    body:'',confirm:'Reset model',onConfirm:()=>{ state=defaultState(); location.hash='';
+      ui.section='project'; pushHistory(); autosave(); refresh(true); }});
+}
+function encodeState(){ return btoa(unescape(encodeURIComponent(JSON.stringify(state)))); }
+function decodeState(s){ return JSON.parse(decodeURIComponent(escape(atob(s)))); }
+function migrate(s){
+  const d=defaultState();
+  /* deep() is a WHITELIST against defaultState(): it iterates the keys of the default
+     template, so any key that is not present there is silently dropped on every load,
+     every shareable link and every named save. Add new state keys to defaultState(). */
+  const deep=(dst,src)=>{ for(const k in dst){ if(src&&src[k]!==undefined){
+    if(dst[k]&&typeof dst[k]==='object'&&!Array.isArray(dst[k])) deep(dst[k],src[k]); else dst[k]=src[k]; } } return dst; };
+  const out=deep(d,s);
+  out.sponsor=Array.isArray(s.sponsor)?s.sponsor:d.sponsor;
+  /* 2.3 -- older saves have untyped other-source rows; default them to the unclassified
+     class rather than silently assuming a treatment. */
+  out.other=(Array.isArray(s.other)?s.other:d.other).map(o=>Object.assign({cls:'other',rate:null},o));
+  out.scenarios=Array.isArray(s.scenarios)&&s.scenarios.length? s.scenarios.map(x=>deep(scenarioA(),x)) : d.scenarios;
+  return out;
+}
+function download(name,text,type){
+  const b=new Blob([text],{type:type||'text/plain'});
+  const a=document.createElement('a'); a.href=URL.createObjectURL(b); a.download=name; a.click();
+  setTimeout(()=>URL.revokeObjectURL(a.href),1000);
+}
+function csvEscape(v){ const s=String(v==null?'':v); return /[",\n]/.test(s)?'"'+s.replace(/"/g,'""')+'"':s; }
+function exportCSV(){
+  const ctx=buildContext(), rs=state.scenarios.map(sc=>calcScenario(sc,ctx)), L=[];
+  L.push(['Capital stack model',state.project.name,state.project.location,state.project.asOf]);
+  L.push([]); L.push(['GLOBAL ASSUMPTIONS']);
+  L.push(['Total development cost',ctx.tdc]); L.push(['Units',state.project.units]);
+  L.push(['SOFR',ctx.sofr]); L.push(['Max combined LTC',ctx.maxCombinedLTC]);
+  L.push(['Construction period (mo)',state.project.constructionMonths]);
+  L.push([]); L.push(['SPONSOR SOURCES','Classification','Amount','Equity credit']);
+  state.sponsor.forEach(s=>L.push([s.label,SPONSOR_CLASSES[s.cls],s.amount,s.credit?'Yes':'No']));
+  L.push(['Total sponsor sources','',ctx.sponsorTotal]); L.push(['Lender-recognized','',ctx.sponsorCredited]);
+  if(state.other.length){ L.push([]); L.push(['OTHER SOURCES','Amount']); state.other.forEach(s=>L.push([s.label,s.amount])); }
+  L.push([]); L.push(['SCENARIO OUTPUT'].concat(rs.map(r=>r.sc.name)));
+  [['Senior LTC',r=>r.seniorLTC],['Senior debt',r=>r.seniorAmt],['Senior rate',r=>r.seniorRate],
+   ['Junior type',r=>JUNIOR_TYPES[r.sc.junior.type]],['Junior amount',r=>r.juniorAmt],
+   ['Junior cost low',r=>r.juniorRate?r.juniorRate.lo:''],['Junior cost high',r=>r.juniorRate?r.juniorRate.hi:''],
+   ['Junior debt',r=>r.juniorDebt],['Preferred equity',r=>r.prefEquity],
+   ['Combined debt LTC',r=>r.combinedDebtLTC],['Total leverage incl pref',r=>r.totalLeverage],
+   ['Blended debt cost low',r=>r.blendedDebt?r.blendedDebt.lo:''],['Blended debt cost high',r=>r.blendedDebt?r.blendedDebt.hi:''],
+   ['Common equity',r=>r.commonEquity],['Sponsor equity applied',r=>r.sponsorApplied],
+   ['LP equity required',r=>r.lpRequired],['Total sources',r=>r.sources],['Total uses',r=>r.uses],
+   ['Funding gap',r=>r.gap],['Financing fees',r=>r.feesTotal],['Capital providers',r=>r.providers]
+  ].forEach(rw=>L.push([rw[0]].concat(rs.map(r=>rw[1](r)))));
+  download('capital-stack-model.csv',L.map(r=>r.map(csvEscape).join(',')).join('\n'),'text/csv');
+}
+
+/* ==========================================================================
+   KEYBOARD
+   ========================================================================== */
+document.addEventListener('keydown',e=>{
+  const meta=e.metaKey||e.ctrlKey;
+  if(meta&&e.key.toLowerCase()==='z'){ e.preventDefault(); e.shiftKey?redo():undo(); return; }
+  if(meta&&e.key.toLowerCase()==='s'){ e.preventDefault(); doSave(); return; }
+  const t=e.target;
+  if(e.key==='Enter'&&t.tagName==='INPUT'&&t.dataset.path){ t.blur(); return; }
+  if(e.key==='Escape'){
+    if(t.tagName==='INPUT'&&t.dataset.path&&t.dataset.orig!==undefined){
+      const k=t.dataset.kind||'text';
+      /* restore the stored value with its original type — parseFloat('null') was writing NaN
+         into state, and from there into autosave, the shareable link and the JSON export */
+      let ov=null; try{ ov=JSON.parse(t.dataset.orig); }catch(err){ ov=null; }
+      if(k!=='text' && typeof ov!=='number' && ov!==null) ov=null;
+      setPath(state,t.dataset.path,ov);
+      t.value=dispOf(getPath(state,t.dataset.path),k); t.blur(); light(); return;
+    }
+    if(document.getElementById('modalHost').innerHTML){
+      const cb=document.getElementById('mCancel')||document.getElementById('mOk');
+      if(cb&&cb.id==='mCancel') cb.click(); else document.getElementById('modalHost').innerHTML='';
+      return; }
+    closeMenus();
+  }
+});
+
+/* ==========================================================================
+   INIT
+   ========================================================================== */
+function bindShell(){
+  document.getElementById('btnEdit').onclick=()=>setMode('edit');
+  document.getElementById('btnPresent').onclick=()=>setMode('present');
+  document.getElementById('btnUndo').onclick=undo;
+  document.getElementById('btnRedo').onclick=redo;
+  document.getElementById('btnSave').onclick=doSave;
+  document.getElementById('btnExport').onclick=e=>{ const m=document.getElementById('exportMenu');
+    const o=m.hidden; closeMenus(); m.hidden=!o; syncExpanded(); e.stopPropagation(); };
+  document.getElementById('btnMore').onclick=e=>{ const m=document.getElementById('moreMenu');
+    const o=m.hidden; closeMenus(); m.hidden=!o;
+    m.querySelectorAll('[data-act^="prec-"]').forEach(b=>
+      b.querySelector('.ck').textContent = b.dataset.act.slice(5)===state.meta.precision?'✓':'');
+    syncExpanded(); e.stopPropagation(); };
+  document.getElementById('statusPill').onclick=e=>{ const p=document.getElementById('statusPanel');
+    const o=p.hidden; closeMenus(); p.hidden=!o; syncExpanded(); e.stopPropagation(); };
+  window.addEventListener('resize',()=>{
+    if(LAST) LAST.rs.forEach((r,i)=>drawStack(r,i,LAST.ctx));
+    equalizeCards();
+  });
+  /* the serif face loads asynchronously and changes the card heights when it arrives */
+  if(document.fonts&&document.fonts.ready) document.fonts.ready.then(equalizeCards);
+  /* P1 -- re-lay the annotation rail against the print geometry, and again on return to
+     screen. The percentage positioning above already survives the switch; this makes the
+     spacing exact where the browser fires these events. */
+  const relayStack=()=>{
+    if(LAST) LAST.rs.forEach((r,i)=>drawStack(r,i,LAST.ctx));
+    equalizeCards();
+  };
+  window.addEventListener('beforeprint',relayStack);
+  window.addEventListener('afterprint',relayStack);
+}
+function init(){
+  let restored=false;
+  if(location.hash.indexOf('#m=')===0){
+    try{ state=migrate(decodeState(location.hash.slice(3))); restored=true; }catch(e){}
+  }
+  if(!restored){
+    try{ const a=localStorage.getItem(AUTOKEY); if(a){ state=migrate(JSON.parse(a)); restored=true; } }catch(e){}
+  }
+  /* 2.10 -- a save written before these keys existed carries positional values; convert once */
+  const ids=state.scenarios.map(sc=>String(sc.id));
+  ['sensScenA','sensScenB'].forEach((k,n)=>{
+    const v=state.conv[k];
+    if(v===undefined||v===null||v==='') state.conv[k]=ids[Math.min(n,ids.length-1)];
+    else if(ids.indexOf(String(v))<0 && isFinite(+v) && ids[+v]!==undefined) state.conv[k]=ids[+v];
+  });
+  bindShell();
+  pushHistory();
+  setMode(state.meta.mode==='present'?'present':'edit');
+  refresh(true);
+  setSaveInd('',false);
+}
+init();
+</script>
+</body>
+</html>

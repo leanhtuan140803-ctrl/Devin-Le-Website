@@ -1,0 +1,2198 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Equity Distribution Waterfall — Interactive Model</title>
+<style>
+/* ============================================================
+   TOKENS
+   Every text/background pair below is verified >= 4.5:1, and every
+   control boundary >= 3:1. The three allocation fills are separated
+   in luminance (2% / 53% / 18%) so they remain distinct in greyscale,
+   and the incentive fill also carries a hatch so meaning never
+   depends on colour alone.
+   ============================================================ */
+:root{
+  --navy:#122540;        /* sponsor            */
+  --navy-700:#1b3559;
+  --navy-500:#2c4d78;
+  --lp:#a3c4e2;          /* investor fill      */
+  --lp-deep:#3a6491;     /* investor figures   */
+  --lp-wash:#eaf1f8;
+  --gold:#96702c;        /* incentive fill     */
+  --gold-deep:#6f5623;   /* incentive figures  */
+  --gold-wash:#f6f0e2;
+  --ink:#1b212a;
+  --ink-2:#535d6b;
+  --ink-3:#636c77;
+  --line:#e3e7ed;        /* decorative hairline */
+  --ctl:#7e8c9f;         /* control boundary, 3.42:1 */
+  --paper:#fff;
+  --warm:#faf9f6;
+  --warm-2:#f4f2ee;
+  --ok:#2c6b4f;
+  --warn:#7a4e17;
+  --err:#95271c;
+  --serif:"Iowan Old Style","Palatino Linotype",Palatino,"Book Antiqua",Georgia,serif;
+  --sans:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+  --r:8px;
+  --sheet-h:0px;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{-webkit-text-size-adjust:100%}
+body{
+  background:var(--warm);color:var(--ink);font-family:var(--sans);font-size:15px;line-height:1.5;
+  font-variant-numeric:tabular-nums lining-nums;-webkit-font-smoothing:antialiased;overflow-x:hidden;
+  padding-bottom:var(--sheet-h);
+}
+h1,h2,h3,.serif{font-family:var(--serif);font-weight:600;color:var(--navy);letter-spacing:-.01em}
+h1{font-size:clamp(25px,3.2vw,36px);line-height:1.1}
+h2{font-size:clamp(18px,2vw,22px);line-height:1.2}
+h3{font-size:15px;line-height:1.3}
+p{max-width:74ch}
+.eyebrow{font-size:10.5px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--ink-3)}
+.tiny{color:var(--ink-3);font-size:11.5px;line-height:1.45}
+.sr{position:absolute!important;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
+.dot{width:10px;height:10px;border-radius:2px;flex:none;display:inline-block}
+.dot.gp{background:var(--navy)}
+.dot.lp{background:var(--lp);box-shadow:inset 0 0 0 1px rgba(18,37,64,.25)}
+.dot.pm{background:var(--gold);background-image:repeating-linear-gradient(45deg,rgba(255,255,255,.4) 0 2px,transparent 2px 4px)}
+
+/* ---------- top bar ---------- */
+.topbar{background:var(--navy);color:#fff;border-bottom:3px solid var(--gold)}
+.topbar-in{max-width:1400px;margin:0 auto;padding:20px clamp(16px,3vw,40px) 22px;
+  display:flex;flex-wrap:wrap;gap:14px 28px;align-items:flex-end;justify-content:space-between}
+.topbar h1{color:#fff}
+.topbar .sub{color:#c9d6e6;font-size:13.5px;margin-top:6px;max-width:60ch}
+.tools{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.badge{display:inline-flex;align-items:center;gap:8px;font-size:10.5px;font-weight:700;letter-spacing:.13em;
+  text-transform:uppercase;color:#e8dcc0;border:1px solid rgba(150,112,44,.9);background:rgba(150,112,44,.28);
+  padding:6px 12px;border-radius:4px}
+.badge::before{content:"";width:6px;height:6px;border-radius:50%;background:#e8dcc0}
+
+/* ---------- layout ---------- */
+.layout{max-width:1400px;margin:0 auto;padding:0 clamp(16px,3vw,40px);
+  display:grid;grid-template-columns:330px minmax(0,1fr);gap:0 clamp(22px,2.6vw,40px);align-items:start}
+.main{padding:24px 0 40px;min-width:0}
+.block{margin-bottom:30px}
+.block-hd{display:flex;flex-wrap:wrap;gap:4px 18px;align-items:baseline;justify-content:space-between;margin-bottom:12px}
+.block-hd .note{font-size:11.5px;color:var(--ink-3)}
+
+/* ---------- buttons ---------- */
+.btn{font:inherit;font-size:11.5px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--navy);
+  background:#fff;border:1px solid var(--ctl);border-radius:5px;padding:7px 12px;cursor:pointer;
+  transition:border-color .12s,background .12s}
+.btn:hover{border-color:var(--navy);background:var(--warm-2)}
+.btn:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
+.btn[disabled]{opacity:.45;cursor:default}
+.btn[disabled]:hover{border-color:var(--ctl);background:#fff}
+.btn.pri{background:var(--navy);color:#fff;border-color:var(--navy)}
+.btn.pri:hover{background:var(--navy-700)}
+.btn.ghost{background:transparent;color:#e8eef6;border-color:rgba(255,255,255,.4)}
+.btn.ghost:hover{background:rgba(255,255,255,.12);border-color:#fff}
+.btn.ico{padding:7px 11px;font-size:13px;letter-spacing:0}
+
+/* ============================================================
+   ASSUMPTION RAIL  (desktop sticky · mobile bottom sheet)
+   ============================================================ */
+.rail{position:sticky;top:0;max-height:100vh;overflow-y:auto;overscroll-behavior:contain;padding:24px 0 30px}
+.rail-hd{display:flex;align-items:baseline;justify-content:space-between;gap:12px;margin-bottom:4px}
+.rail-close{display:none}
+.panel{background:var(--paper);border:1px solid var(--line);border-radius:var(--r)}
+.panel+.panel{margin-top:12px}
+.panel-hd{padding:10px 15px;border-bottom:1px solid var(--line);background:var(--warm-2);border-radius:var(--r) var(--r) 0 0}
+.panel-bd{padding:15px}
+.fields{display:grid;gap:15px}
+.f label{display:flex;align-items:baseline;justify-content:space-between;gap:8px;margin-bottom:6px}
+.f .lab{font-size:12.5px;font-weight:600;color:var(--ink-2);line-height:1.3;flex:1 1 auto;min-width:0}
+.f .lab .tech{display:block;font-size:10.5px;font-weight:500;color:var(--ink-3)}
+.f .out{font-family:var(--serif);font-size:14.5px;font-weight:600;color:var(--navy);white-space:nowrap;flex:0 1 auto;overflow:hidden;text-overflow:ellipsis}
+.inp{display:flex;align-items:center;height:38px;background:#fff;border:1px solid var(--ctl);border-radius:6px;overflow:hidden}
+.inp:focus-within{border-color:var(--navy);box-shadow:0 0 0 3px rgba(44,77,120,.25)}
+.inp .aff{font-size:12px;font-weight:600;color:var(--ink-2);padding:0 8px;user-select:none;background:var(--warm-2);align-self:stretch;display:flex;align-items:center}
+.inp .aff.pre{border-right:1px solid var(--line)}
+.inp .aff.post{border-left:1px solid var(--line)}
+.inp input{flex:1;min-width:0;width:100%;border:0;outline:0;background:transparent;font:inherit;font-size:13.5px;
+  font-weight:600;color:var(--ink);padding:0 9px;text-align:right;-moz-appearance:textfield}
+.inp input::-webkit-outer-spin-button,.inp input::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
+.inp.bad{border-color:var(--err);background:#fdf6f5}
+.slide{margin-top:7px}
+input[type=range]{-webkit-appearance:none;appearance:none;width:100%;height:22px;background:transparent;cursor:pointer;display:block}
+input[type=range]::-webkit-slider-runnable-track{height:4px;background:var(--ctl);border-radius:2px}
+input[type=range]::-moz-range-track{height:4px;background:var(--ctl);border-radius:2px}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;appearance:none;width:17px;height:17px;border-radius:50%;
+  background:var(--navy);border:2px solid #fff;box-shadow:0 0 0 1px var(--ctl);margin-top:-7px}
+input[type=range]::-moz-range-thumb{width:17px;height:17px;border-radius:50%;background:var(--navy);border:2px solid #fff;box-shadow:0 0 0 1px var(--ctl)}
+input[type=range]:focus-visible{outline:3px solid var(--gold);outline-offset:3px;border-radius:4px}
+.hint{font-size:10.5px;color:var(--ink-3);margin-top:4px}
+.msg{font-size:11.5px;font-weight:600;line-height:1.4;margin-top:6px;display:none}
+.msg.show{display:block}
+.msg.err{color:var(--err)}
+.msg.warn{color:var(--warn)}
+
+/* ============================================================
+   1 · RESULT HERO  (the answer, first)
+   ============================================================ */
+.hero{background:var(--navy);border-radius:var(--r);color:#fff;overflow:hidden}
+.hero-top{padding:18px clamp(16px,2.2vw,26px) 4px;display:flex;flex-wrap:wrap;gap:8px 20px;align-items:baseline;justify-content:space-between}
+.hero-top .eyebrow{color:#9fb4d0}
+.hero-chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{font-size:11px;font-weight:600;color:#d5e0ee;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.18);
+  border-radius:20px;padding:3px 10px;white-space:nowrap}
+.hero-grid{display:grid;grid-template-columns:1fr 1fr;gap:1px;background:rgba(255,255,255,.14);margin:14px 0 0}
+@media(max-width:620px){.hero-grid{grid-template-columns:1fr}}
+.hero-cell{background:var(--navy);padding:16px clamp(16px,2.2vw,26px) 18px}
+.hero-cell .who{display:flex;align-items:center;gap:8px;font-size:12px;font-weight:600;color:#c9d6e6;margin-bottom:8px}
+.hero-cell .big{font-family:var(--serif);font-size:clamp(28px,4vw,42px);font-weight:600;line-height:1;color:#fff;overflow-wrap:anywhere}
+.hero-cell .sub{font-size:12.5px;color:#a9bcd6;margin-top:7px}
+.hero-cell .kv{display:flex;gap:22px;margin-top:12px;flex-wrap:wrap}
+.hero-cell .kv div{min-width:74px}
+.hero-cell .kv .k{font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#8ba3c4}
+.hero-cell .kv .v{font-family:var(--serif);font-size:19px;font-weight:600;color:#fff;margin-top:2px}
+.hero-foot{padding:12px clamp(16px,2.2vw,26px) 16px;display:flex;flex-wrap:wrap;gap:8px 10px;align-items:center;
+  border-top:1px solid rgba(255,255,255,.14)}
+.gate-pill{font-size:11.5px;font-weight:600;padding:4px 11px;border-radius:20px;border:1px solid;white-space:nowrap}
+.gate-pill.hit{color:#bfe3cf;background:rgba(44,107,79,.32);border-color:rgba(191,227,207,.45)}
+.gate-pill.hit::before{content:"\2713\00a0\00a0"}
+.gate-pill.miss{color:#b9c6d8;background:rgba(255,255,255,.07);border-color:rgba(255,255,255,.22)}
+.gate-pill.miss::before{content:"\2014\00a0\00a0"}
+
+/* capital strip under the hero */
+.capstrip{display:grid;grid-template-columns:repeat(auto-fit,minmax(148px,1fr));gap:1px;background:var(--line);
+  border:1px solid var(--line);border-top:0;border-radius:0 0 var(--r) var(--r);overflow:hidden;margin-top:-1px}
+.capstrip .c{background:var(--paper);padding:11px 15px}
+.capstrip .k{display:flex;align-items:center;gap:7px;font-size:11.5px;font-weight:600;color:var(--ink-2)}
+.capstrip .v{font-family:var(--serif);font-size:clamp(16px,1.6vw,20px);font-weight:600;color:var(--navy);margin-top:3px;overflow-wrap:anywhere}
+.capstrip .s{font-size:11.5px;color:var(--ink-3);margin-top:1px}
+
+/* ============================================================
+   1b · SCENARIO COMPARISON
+   ============================================================ */
+.cmp{margin-top:12px;border:1px solid var(--line);border-radius:var(--r);background:var(--paper);overflow:hidden}
+.cmp-idle{display:flex;align-items:center;gap:12px;flex-wrap:wrap;padding:11px 15px}
+.cmp-idle .t{font-size:12.5px;color:var(--ink-2);flex:1;min-width:190px}
+.cmp-hd{display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:11px 15px;background:var(--warm-2);border-bottom:1px solid var(--line)}
+.cmp-hd h3{font-size:15px;margin-right:auto}
+.cmp-diff{display:flex;flex-wrap:wrap;gap:6px;padding:10px 15px;border-bottom:1px solid var(--line)}
+.cmp-diff .d{font-size:11px;font-weight:600;color:var(--gold-deep);background:var(--gold-wash);border:1px solid #e0d3b4;
+  border-radius:20px;padding:3px 10px;white-space:nowrap}
+.cmp-diff .none{font-size:11.5px;color:var(--ink-3)}
+.cmp-tbl{overflow-x:auto}
+.cmp-tbl table{border-collapse:collapse;width:100%;min-width:520px;font-size:13px}
+.cmp-tbl th,.cmp-tbl td{padding:8px 14px;text-align:right;border-bottom:1px solid var(--line);white-space:nowrap}
+.cmp-tbl th:first-child,.cmp-tbl td:first-child{text-align:left;white-space:normal;font-weight:600;color:var(--ink-2)}
+.cmp-tbl thead th{font-size:10px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--ink-2);
+  border-bottom:1.5px solid var(--ctl)}
+.cmp-tbl tbody tr:last-child td{border-bottom:0}
+.cmp-tbl td.a{color:var(--ink-2)}
+.cmp-tbl td.b{color:var(--navy);font-weight:700}
+.cmp-tbl td.dl{font-weight:700}
+.cmp-tbl td.dl.up{color:var(--ok)}
+.cmp-tbl td.dl.dn{color:var(--err)}
+.cmp-tbl td.dl.flat{color:var(--ink-3);font-weight:500}
+.cmp-tbl tr.grp td{background:var(--warm);font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;
+  color:var(--ink-2);padding:6px 14px}
+
+/* ============================================================
+   4b · SENSITIVITY HEATMAP
+   ============================================================ */
+.heat-wrap{border:1px solid var(--line);border-radius:var(--r);background:var(--paper);padding:15px 16px 16px}
+.heat-ctl{display:flex;flex-wrap:wrap;gap:10px 16px;align-items:center;margin-bottom:13px}
+.seg-ctl{display:flex;border:1px solid var(--ctl);border-radius:6px;overflow:hidden}
+.seg-ctl label{position:relative}
+.seg-ctl input{position:absolute;opacity:0;width:100%;height:100%;left:0;top:0;margin:0;cursor:pointer}
+.seg-ctl span{display:block;font-size:11.5px;font-weight:600;color:var(--ink-2);padding:8px 13px;cursor:pointer;
+  border-right:1px solid var(--line);white-space:nowrap;background:#fff}
+.seg-ctl label:last-child span{border-right:0}
+.seg-ctl input:checked+span{background:var(--navy);color:#fff}
+.seg-ctl input:focus-visible+span{outline:3px solid var(--gold);outline-offset:-3px}
+.heat-scroll{overflow-x:auto}
+table.heat{border-collapse:separate;border-spacing:2px;width:100%;min-width:600px}
+table.heat caption{text-align:left;font-size:11.5px;color:var(--ink-3);line-height:1.5;padding-bottom:10px}
+table.heat th{font-size:10px;font-weight:700;letter-spacing:.04em;color:var(--ink-2);padding:4px 6px;white-space:nowrap}
+table.heat thead th{text-align:center}
+table.heat tbody th{text-align:right;padding-right:9px}
+table.heat td{padding:0;width:auto}
+table.heat .cell{display:block;width:100%;border:0;border-radius:4px;padding:9px 4px;font:inherit;font-size:11.5px;
+  font-weight:700;font-variant-numeric:tabular-nums;cursor:pointer;text-align:center;line-height:1.2;
+  transition:transform .1s,box-shadow .1s}
+table.heat .cell:hover{transform:scale(1.06);box-shadow:0 2px 8px rgba(18,37,64,.25);position:relative;z-index:2}
+table.heat .cell:focus-visible{outline:3px solid var(--gold);outline-offset:1px;position:relative;z-index:3}
+table.heat .cell.now{box-shadow:inset 0 0 0 2.5px var(--gold)}
+.heat-axis{font-size:11px;color:var(--ink-3);margin-top:9px;line-height:1.5}
+.heat-key{display:flex;align-items:center;gap:9px;flex-wrap:wrap;margin-top:10px;font-size:11px;color:var(--ink-2)}
+.heat-ramp{display:flex;height:11px;width:150px;border-radius:3px;overflow:hidden;border:1px solid var(--line)}
+.heat-ramp i{flex:1;height:100%}
+
+/* ============================================================
+   2 · WALKTHROUGH
+   ============================================================ */
+.walk{border:1px solid var(--line);border-radius:var(--r);background:var(--paper);overflow:hidden}
+.walk-nar{padding:14px 17px;border-bottom:1px solid var(--line);background:var(--warm-2);
+  display:grid;grid-template-columns:minmax(0,1fr) auto;gap:12px 22px;align-items:center}
+@media(max-width:640px){.walk-nar{grid-template-columns:1fr}}
+.w-meta{display:flex;align-items:center;gap:12px;margin-bottom:5px;flex-wrap:wrap}
+.w-count{font-size:10.5px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--ink-3);white-space:nowrap}
+.w-dots{display:flex}
+.w-dots button{width:24px;height:24px;padding:0;border:0;background:none;cursor:pointer;display:grid;place-items:center}
+.w-dots button::before{content:"";width:9px;height:9px;border-radius:50%;border:1px solid var(--ctl);background:#fff;transition:background .2s,transform .2s}
+.w-dots button[aria-current="true"]::before{background:var(--navy);border-color:var(--navy);transform:scale(1.3)}
+.w-dots button:hover::before{border-color:var(--navy)}
+.w-dots button:focus-visible{outline:3px solid var(--gold);outline-offset:-2px;border-radius:50%}
+.walk-nar h3{font-size:16.5px}
+.w-text{font-size:13px;color:var(--ink-2);line-height:1.55;margin-top:4px;max-width:78ch;min-height:3.4em}
+.w-text b{color:var(--ink);font-weight:600}
+.w-ctrl{display:flex;gap:7px;align-items:center;flex-wrap:wrap}
+.btn.math[aria-expanded="true"]{background:var(--gold-wash);border-color:var(--gold);color:var(--gold-deep)}
+
+.stage{padding:15px 17px 17px}
+.w-src{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;border:1px dashed var(--ctl);
+  border-radius:6px;padding:9px 13px;background:var(--warm);transition:opacity .35s}
+.w-src .k{font-size:11.5px;font-weight:600;color:var(--ink-2)}
+.w-src .v{font-family:var(--serif);font-size:17px;font-weight:600;color:var(--navy)}
+.w-arrow{text-align:center;color:var(--ink-3);font-size:14px;line-height:1;padding:5px 0}
+.w-row{display:grid;grid-template-columns:148px minmax(0,1fr) 120px;gap:14px;align-items:center;padding:8px 0;transition:opacity .35s}
+@media(max-width:680px){.w-row{grid-template-columns:1fr;gap:5px}.w-row .w-amt{text-align:left}}
+.w-row.off{opacity:.32}
+.w-lab .n{font-size:13px;font-weight:600;color:var(--navy)}
+.w-lab .s{font-size:11px;color:var(--ink-3);display:block;line-height:1.35}
+.w-track{height:28px;border-radius:5px;background:var(--warm-2);box-shadow:inset 0 0 0 1px var(--line);overflow:hidden;display:flex}
+.w-track i{height:100%;display:block;transition:width .7s cubic-bezier(.33,.9,.35,1)}
+.w-amt{font-family:var(--serif);font-size:15px;font-weight:600;color:var(--navy);text-align:right;white-space:nowrap}
+.w-amt.zero{color:var(--ink-3);font-family:var(--sans);font-size:12px}
+.w-row.hot .w-lab .n{color:var(--gold-deep)}
+.w-row.hot .w-track{box-shadow:inset 0 0 0 1px var(--line),0 0 0 2px rgba(150,112,44,.45)}
+.w-gate{display:flex;align-items:center;gap:9px;padding:5px 0 5px 6px;transition:opacity .35s}
+.w-gate.off{opacity:.32}
+.w-gate .bar{flex:none;width:26px;height:1px;background:var(--ctl)}
+.w-gate .tag{font-size:11px;font-weight:600;padding:4px 11px;border-radius:20px;white-space:nowrap;
+  border:1px solid var(--ctl);color:var(--ink-2);background:var(--warm-2)}
+.w-gate.lit .tag{color:var(--ok);background:#eaf4ef;border-color:#a9cdba}
+.w-gate.lit .tag::before{content:"\2713\00a0\00a0";font-weight:700}
+.w-gate .why{font-size:11px;color:var(--ink-3);line-height:1.4}
+.w-buckets{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:14px;padding-top:14px;border-top:1px solid var(--line)}
+@media(max-width:520px){.w-buckets{grid-template-columns:1fr}}
+.w-bucket{border:1px solid var(--line);border-left:3px solid var(--navy);border-radius:6px;padding:11px 14px;background:var(--warm)}
+.w-bucket.inv{border-left-color:var(--lp-deep)}
+.w-bucket .k{display:flex;align-items:center;gap:7px;font-size:11.5px;font-weight:600;color:var(--ink-2)}
+.w-bucket .v{font-family:var(--serif);font-size:clamp(18px,2vw,23px);font-weight:600;color:var(--navy);margin-top:4px;overflow-wrap:anywhere}
+.w-bucket.inv .v{color:var(--lp-deep)}
+.w-bucket .s{font-size:11.5px;color:var(--ink-3);margin-top:2px;min-height:1.3em}
+
+/* math drawer */
+.w-math{padding:15px 17px;border-bottom:1px solid var(--line);background:#fcfbf8;box-shadow:inset 0 1px 0 rgba(150,112,44,.3)}
+.w-math[hidden]{display:none}
+.m-head{font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--gold-deep);margin-bottom:9px}
+.m-head+.m-head{margin-top:17px}
+.m-lines{display:flex;flex-direction:column;gap:1px;background:var(--line);border:1px solid var(--line);border-radius:6px;overflow:hidden}
+.m-line{display:grid;grid-template-columns:minmax(118px,1.05fr) minmax(0,1.5fr) minmax(96px,auto);gap:8px 16px;
+  align-items:baseline;background:#fff;padding:8px 13px}
+@media(max-width:720px){.m-line{grid-template-columns:1fr;gap:2px}.m-line .m-res{text-align:left;padding-top:2px}}
+.m-line.tot{background:var(--warm-2)}
+.m-line .m-k{font-size:12.5px;color:var(--ink-2);font-weight:600;line-height:1.35}
+.m-line .m-x{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:12px;color:var(--ink-3);line-height:1.5;overflow-wrap:anywhere}
+.m-line .m-res{font-family:var(--serif);font-size:14.5px;font-weight:600;color:var(--navy);text-align:right;white-space:nowrap}
+.m-line.tot .m-res{color:var(--gold-deep)}
+.m-note{font-size:12px;color:var(--ink-2);line-height:1.55;margin-bottom:9px;max-width:80ch}
+.m-note b{color:var(--ink)}
+.m-tbl{overflow:auto;max-height:330px;border:1px solid var(--line);border-radius:6px;background:#fff}
+.m-tbl table{min-width:620px;font-size:12px}
+.m-tbl caption{padding:8px 11px 6px;font-size:11px;color:var(--ink-3);text-align:left}
+.m-tbl th,.m-tbl td{padding:6px 11px;border-bottom:1px solid var(--line);white-space:nowrap}
+.m-tbl thead th{font-size:9.5px;letter-spacing:.05em;background:var(--warm-2);position:sticky;top:0;z-index:1}
+.m-tbl tbody tr:last-child td{border-bottom:0}
+.m-tbl td.hl,.m-tbl th.hl{background:var(--gold-wash)}
+.m-tbl td.zero{color:var(--ink-3)}
+.m-tbl .yr{font-weight:600;color:var(--navy)}
+.m-check{display:flex;align-items:flex-start;gap:8px;margin-top:9px;font-size:12px;color:var(--ok);background:#eaf4ef;
+  border:1px solid #a9cdba;border-radius:6px;padding:8px 12px;line-height:1.45}
+
+/* ============================================================
+   3 · TIER MODULE  (sequence + cards + per-$100, merged)
+   ============================================================ */
+.seq{display:flex;align-items:center;gap:4px;flex-wrap:wrap;padding:11px 14px;border:1px solid var(--line);
+  border-radius:var(--r);background:var(--paper);margin-bottom:14px}
+.seq .s-node{font-size:12.5px;font-weight:600;color:var(--navy);background:var(--warm-2);border:1px solid var(--line);
+  border-radius:5px;padding:6px 12px;white-space:nowrap}
+.seq .s-gate{display:flex;align-items:center;gap:7px;padding:0 4px;font-size:11px;color:var(--ink-2);white-space:nowrap}
+.seq .s-gate b{color:var(--gold-deep);font-weight:700}
+.seq .s-arw{color:var(--ink-3)}
+
+.tiers{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;align-items:stretch}
+@media(max-width:980px){.tiers{grid-template-columns:1fr}}
+.tier{display:flex;flex-direction:column;background:var(--paper);border:1px solid var(--line);border-top:3px solid var(--navy);
+  border-radius:var(--r);overflow:hidden}
+.tier.promoted{border-top-color:var(--gold)}
+.tier-hd{padding:13px 15px 11px;border-bottom:1px solid var(--line)}
+.tier-hd .row{display:flex;align-items:baseline;justify-content:space-between;gap:10px}
+.tier-hd .n{font-family:var(--serif);font-size:19px;font-weight:600;color:var(--navy)}
+.tier-hd .r{font-size:11px;font-weight:700;letter-spacing:.09em;text-transform:uppercase;color:var(--ink-3)}
+.tier-hd .when{font-size:12px;color:var(--ink-2);margin-top:6px;line-height:1.4;min-height:2.8em}
+.tier-metrics{display:grid;grid-template-columns:repeat(3,1fr);border-bottom:1px solid var(--line)}
+.tier-metrics div{padding:10px 8px;text-align:center;border-right:1px solid var(--line)}
+.tier-metrics div:last-child{border-right:0}
+.tier-metrics .k{font-size:9.5px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-3);display:block;line-height:1.3}
+.tier-metrics .v{font-family:var(--serif);font-size:18px;font-weight:600;line-height:1.1;margin-top:4px;display:block}
+.tier-metrics .v.gp{color:var(--navy)}
+.tier-metrics .v.lp{color:var(--lp-deep)}
+.tier-metrics .v.pm{color:var(--gold-deep)}
+.tier-metrics .v.off{color:var(--ink-3);font-size:15px}
+.tier-bd{padding:13px 15px;display:flex;flex-direction:column;gap:10px;flex:1}
+.stack{display:flex;height:32px;border-radius:5px;overflow:hidden;box-shadow:inset 0 0 0 1px rgba(18,37,64,.1)}
+.stack i{display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;white-space:nowrap;overflow:hidden;min-width:0}
+.seg-lp{background:var(--lp);color:#0f2138}
+.seg-gp{background:var(--navy);color:#fff}
+.seg-pm{background:var(--gold);color:#fff;background-image:repeating-linear-gradient(45deg,rgba(255,255,255,.3) 0 3px,transparent 3px 7px)}
+.tier-bd .exp{font-size:12.5px;color:var(--ink-2);line-height:1.5}
+.led{background:var(--warm);border:1px solid var(--line);border-radius:6px;padding:10px 12px;margin-top:auto}
+.led .h{font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-3);margin-bottom:6px}
+.led .l{display:flex;justify-content:space-between;gap:10px;font-size:12.5px;padding:3px 0;border-bottom:1px dotted var(--line)}
+.led .l:last-child{border-bottom:0}
+.led .l span:last-child{font-weight:600;white-space:nowrap}
+.led .l.ind span:first-child{padding-left:12px;color:var(--ink-3);font-size:12px}
+.led .l.pm span:last-child{color:var(--gold-deep)}
+.led .l.sum{border-top:1.5px solid var(--ctl);border-bottom:0;margin-top:4px;padding-top:7px}
+.led .l.sum.gp span:last-child{color:var(--navy);font-family:var(--serif);font-size:15px}
+.led .l.sum.lp span:last-child{color:var(--lp-deep);font-family:var(--serif);font-size:15px}
+
+/* ============================================================
+   4 · TIMELINE
+   ============================================================ */
+.tl-wrap{border:1px solid var(--line);border-radius:var(--r);background:var(--paper);padding:16px 17px 12px}
+.tl{display:flex;align-items:flex-end;gap:clamp(2px,.6vw,8px);height:170px;padding-top:26px;position:relative}
+.tl-col{flex:1 1 0;min-width:0;display:flex;flex-direction:column;justify-content:flex-end;height:100%;position:relative}
+.tl-bar{width:100%;border-radius:3px 3px 0 0;overflow:hidden;display:flex;flex-direction:column-reverse;
+  box-shadow:inset 0 0 0 1px rgba(18,37,64,.1);min-height:2px;transition:height .5s cubic-bezier(.33,.9,.35,1)}
+.tl-bar i{display:block;width:100%}
+.tl-flag{position:absolute;left:50%;transform:translateX(-50%);bottom:100%;margin-bottom:5px;white-space:nowrap;
+  font-size:9.5px;font-weight:700;letter-spacing:.03em;color:var(--ok);background:#eaf4ef;border:1px solid #a9cdba;
+  border-radius:10px;padding:2px 7px}
+.tl-flag.two{margin-bottom:22px}
+.tl-axis{display:flex;gap:clamp(2px,.6vw,8px);margin-top:6px;border-top:1px solid var(--line);padding-top:5px}
+.tl-axis span{flex:1 1 0;min-width:0;text-align:center;font-size:10px;color:var(--ink-3);overflow:hidden}
+.tl-legend{display:flex;flex-wrap:wrap;gap:6px 16px;margin-top:10px}
+.tl-legend span{display:flex;align-items:center;gap:6px;font-size:11.5px;color:var(--ink-2);font-weight:500}
+
+/* ============================================================
+   5 · DETAIL DISCLOSURES
+   ============================================================ */
+details.disc{border:1px solid var(--line);border-radius:var(--r);background:var(--paper);overflow:hidden}
+details.disc+details.disc{margin-top:12px}
+details.disc>summary{list-style:none;cursor:pointer;padding:13px 16px;display:flex;align-items:center;gap:11px;
+  font-family:var(--serif);font-size:17px;font-weight:600;color:var(--navy);background:var(--warm-2)}
+details.disc>summary::-webkit-details-marker{display:none}
+details.disc>summary::before{content:"";width:0;height:0;border-left:6px solid var(--ink-2);border-top:4.5px solid transparent;
+  border-bottom:4.5px solid transparent;transition:transform .15s;flex:none}
+details.disc[open]>summary::before{transform:rotate(90deg)}
+details.disc>summary:focus-visible{outline:3px solid var(--gold);outline-offset:-3px}
+details.disc>summary .sm{font-family:var(--sans);font-size:11.5px;font-weight:500;color:var(--ink-3);margin-left:auto}
+.disc-bd{padding:15px 16px 17px}
+
+table.data{border-collapse:collapse;width:100%;min-width:640px;font-size:13px}
+.tbl-scroll{overflow-x:auto}
+table.data caption{text-align:left;padding-bottom:9px;font-size:11.5px;color:var(--ink-3);line-height:1.5}
+table.data th,table.data td{padding:9px 13px;text-align:right;border-bottom:1px solid var(--line);white-space:nowrap}
+table.data th:first-child,table.data td:first-child{text-align:left;white-space:normal}
+table.data thead th{font-size:10px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--ink-2);
+  border-bottom:1.5px solid var(--ctl);vertical-align:bottom}
+table.data tbody tr:last-child td{border-bottom:0}
+table.data td.gp{color:var(--navy);font-weight:700}
+table.data td.lp{color:var(--lp-deep);font-weight:600}
+table.data td.pm{color:var(--gold-deep);font-weight:600}
+.tn{font-weight:600;color:var(--ink)}
+.ts{display:block;font-size:11px;color:var(--ink-3);font-weight:400;margin-top:1px}
+
+.primer{display:grid;grid-template-columns:repeat(auto-fit,minmax(228px,1fr));gap:16px 24px}
+.pcard .num{font-family:var(--serif);font-size:13px;font-weight:600;color:var(--gold-deep);letter-spacing:.06em}
+.pcard h3{margin:4px 0;font-size:14px}
+.pcard p{font-size:12.5px;color:var(--ink-2);line-height:1.55}
+.gloss{display:grid;grid-template-columns:repeat(auto-fit,minmax(238px,1fr));gap:12px 24px;margin-top:16px;padding-top:15px;border-top:1px solid var(--line)}
+.gloss div{font-size:12.5px;line-height:1.5}
+.gloss dt{font-weight:600;color:var(--navy)}
+.gloss dt em{font-style:normal;font-weight:500;color:var(--gold-deep);font-size:11.5px}
+.gloss dd{color:var(--ink-2);margin-top:2px}
+
+footer{border-top:1px solid var(--line);margin-top:6px;padding:18px 0 30px}
+footer p{font-size:11px;color:var(--ink-3);line-height:1.6;max-width:105ch}
+footer p+p{margin-top:6px}
+
+/* ============================================================
+   MOBILE SHEET
+   ============================================================ */
+.sheetbar{display:none}
+.backdrop{display:none}
+@media(max-width:1080px){
+  .layout{grid-template-columns:1fr}
+  body{--sheet-h:66px}
+  .rail{position:fixed;left:0;right:0;bottom:0;top:auto;z-index:60;max-height:80vh;background:var(--paper);
+    border-top:1px solid var(--ctl);border-radius:14px 14px 0 0;box-shadow:0 -8px 30px rgba(18,37,64,.22);
+    transform:translateY(101%);transition:transform .26s ease;padding:16px 16px 24px;visibility:hidden}
+  .rail.open{transform:none;visibility:visible}
+  .rail-close{display:inline-flex}
+  .fields{grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:15px 20px}
+  .sheetbar{display:flex;position:fixed;left:0;right:0;bottom:0;z-index:50;background:var(--navy);color:#fff;
+    align-items:center;gap:12px;padding:11px 16px;box-shadow:0 -2px 14px rgba(18,37,64,.28)}
+  .sheetbar .sum{flex:1;min-width:0;font-size:11.5px;color:#c9d6e6;line-height:1.35;overflow:hidden}
+  .sheetbar .sum b{color:#fff;font-weight:600}
+  .backdrop.on{display:block;position:fixed;inset:0;background:rgba(10,20,35,.42);z-index:55}
+}
+@media(pointer:coarse){
+  input[type=range]{height:44px}
+  input[type=range]::-webkit-slider-thumb{width:24px;height:24px;margin-top:-10px}
+  input[type=range]::-moz-range-thumb{width:24px;height:24px}
+  .btn{min-height:44px}
+  .inp{height:46px}
+}
+@media(prefers-reduced-motion:reduce){
+  *{transition:none!important;animation:none!important}
+  html{scroll-behavior:auto}
+}
+
+/* ============================================================
+   PRINT — two-page investment-committee summary
+   ============================================================ */
+@media print{
+  @page{margin:12mm}
+  *{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  body{background:#fff;font-size:9.5pt;padding-bottom:0}
+  .topbar-in,.layout{max-width:none;padding-left:0;padding-right:0}
+  .layout{display:block}
+  .tools,.sheetbar,.backdrop,.w-ctrl,.w-dots,.rail-close,.btn{display:none!important}
+  /* assumptions become a compact block, never their own page */
+  .rail{position:static;max-height:none;overflow:visible;visibility:visible;transform:none;box-shadow:none;
+    border:0;padding:10px 0 0;border-radius:0}
+  .rail .panel{border:0;margin:0}
+  .rail .panel+.panel{margin-top:0}
+  .rail .panel-hd{display:none}
+  .rail .panel-bd{padding:0}
+  .rail-hd{margin-bottom:6px}
+  .fields{grid-template-columns:repeat(4,1fr);gap:6px 14px}
+  .inp,.slide,.hint,.msg{display:none!important}
+  .f label{margin-bottom:0}
+  .main{padding:10px 0 0}
+  .hero{break-inside:avoid}
+  .block{break-inside:avoid;margin-bottom:14px}
+  .tier,.pcard,.panel,.walk,.tl-wrap,.heat-wrap,.cmp{break-inside:avoid}
+  /* comparison and heatmap print as static evidence */
+  .cmp-idle,.cmp-hd .btn,.heat-ctl .seg-ctl{display:none!important}
+  .heat-scroll{overflow:visible}
+  table.heat{min-width:0}
+  table.heat .cell{padding:5px 2px;font-size:8.5pt;cursor:default}
+  table.heat .cell:hover{transform:none;box-shadow:none}
+  .cmp-tbl{overflow:visible}
+  .cmp-tbl table{min-width:0}
+  .tiers{grid-template-columns:repeat(3,1fr)}
+  /* page 2: schedule */
+  .print-break{break-before:page}
+  details.disc{border:0}
+  details.disc>summary{background:none;padding:0 0 8px}
+  details.disc:not([open])>.disc-bd{display:block!important}
+  .disc-bd{padding:0}
+  .m-tbl{max-height:none;overflow:visible}
+  .m-tbl table{min-width:0}
+  table.data{min-width:0}
+  th,td{white-space:normal;padding:4px 7px}
+  .w-row,.w-gate,.w-src{opacity:1!important}
+  .w-text{min-height:0}
+  h2{break-after:avoid}
+  a[href]::after{content:""}
+}
+</style>
+</head>
+<body>
+
+<header class="topbar">
+  <div class="topbar-in">
+    <div>
+      <h1>Equity Distribution Waterfall</h1>
+      <p class="sub">How cash from a real estate joint venture is divided between the sponsor and its
+        investor as each return threshold is cleared.</p>
+    </div>
+    <div class="tools">
+      <span class="badge">Illustrative model</span>
+      <button class="btn ghost" id="btnLink" type="button">Copy link</button>
+      <button class="btn ghost" id="btnCsv" type="button">Schedule CSV</button>
+      <button class="btn ghost" id="btnPrint" type="button">Print</button>
+    </div>
+  </div>
+</header>
+
+<div class="layout">
+
+  <!-- ===================== ASSUMPTIONS ===================== -->
+  <aside class="rail" id="rail" aria-label="Model assumptions">
+    <div class="rail-hd">
+      <h2 id="railTitle">Assumptions</h2>
+      <div style="display:flex;gap:7px">
+        <button class="btn" id="reset" type="button">Reset</button>
+        <button class="btn rail-close" id="sheetClose" type="button">Done</button>
+      </div>
+    </div>
+    <p class="tiny" style="margin-bottom:11px">Every figure on this page recalculates as you edit.</p>
+
+    <div class="panel">
+      <div class="panel-hd"><span class="eyebrow">Equity contributed</span></div>
+      <div class="panel-bd"><div class="fields">
+        <div class="f">
+          <label for="gpEq"><span class="lab">Sponsor equity<span class="tech">The operating partner's own capital</span></span><span class="out" id="gpEqOut"></span></label>
+          <div class="inp" id="gpEqWrap"><span class="aff pre">$</span>
+            <input type="text" id="gpEq" value="2,000,000" inputmode="numeric" autocomplete="off" aria-describedby="gpEqHint"></div>
+          <div class="slide"><input type="range" id="gpEqR" min="0" max="1000" step="1" aria-label="Sponsor equity"></div>
+          <p class="hint" id="gpEqHint">$0 – $100,000,000</p>
+          <p class="msg err" id="gpEqMsg"></p>
+        </div>
+        <div class="f">
+          <label for="lpEq"><span class="lab">Investor equity<span class="tech">The capital partner's contribution</span></span><span class="out" id="lpEqOut"></span></label>
+          <div class="inp" id="lpEqWrap"><span class="aff pre">$</span>
+            <input type="text" id="lpEq" value="18,000,000" inputmode="numeric" autocomplete="off" aria-describedby="lpEqHint"></div>
+          <div class="slide"><input type="range" id="lpEqR" min="0" max="1000" step="1" aria-label="Investor equity"></div>
+          <p class="hint" id="lpEqHint">$1 – $100,000,000</p>
+          <p class="msg err" id="lpEqMsg"></p>
+        </div>
+      </div></div>
+    </div>
+
+    <div class="panel">
+      <div class="panel-hd"><span class="eyebrow">Performance thresholds</span></div>
+      <div class="panel-bd"><div class="fields">
+        <div class="f">
+          <label for="h1"><span class="lab">First threshold<span class="tech">Return the investor must reach</span></span><span class="out" id="h1Out"></span></label>
+          <div class="inp" id="h1Wrap"><input type="number" id="h1" value="8" min="0" max="30" step="0.25" inputmode="decimal" aria-describedby="h1Hint"><span class="aff post">%</span></div>
+          <div class="slide"><input type="range" id="h1R" value="8" min="0" max="30" step="0.25" aria-label="First threshold, percent"></div>
+          <p class="hint" id="h1Hint">0% – 30% a year</p>
+          <p class="msg err" id="h1Msg"></p>
+        </div>
+        <div class="f">
+          <label for="h2"><span class="lab">Second threshold<span class="tech">Must be above the first</span></span><span class="out" id="h2Out"></span></label>
+          <div class="inp" id="h2Wrap"><input type="number" id="h2" value="14" min="0" max="40" step="0.25" inputmode="decimal" aria-describedby="h2Hint"><span class="aff post">%</span></div>
+          <div class="slide"><input type="range" id="h2R" value="14" min="0" max="40" step="0.25" aria-label="Second threshold, percent"></div>
+          <p class="hint" id="h2Hint">Above the first threshold</p>
+          <p class="msg err" id="h2Msg"></p>
+        </div>
+      </div></div>
+    </div>
+
+    <div class="panel">
+      <div class="panel-hd"><span class="eyebrow">Sponsor incentive</span></div>
+      <div class="panel-bd"><div class="fields">
+        <div class="f">
+          <label for="p2"><span class="lab">Tier 2 incentive<span class="tech">Share taken off the top</span></span><span class="out" id="p2Out"></span></label>
+          <div class="inp" id="p2Wrap"><input type="number" id="p2" value="20" min="0" max="75" step="1" inputmode="numeric" aria-describedby="p2Hint"><span class="aff post">%</span></div>
+          <div class="slide"><input type="range" id="p2R" value="20" min="0" max="75" step="1" aria-label="Tier 2 incentive, percent"></div>
+          <p class="hint" id="p2Hint">0% – 75% of tier cash</p>
+          <p class="msg err" id="p2Msg"></p>
+        </div>
+        <div class="f">
+          <label for="p3"><span class="lab">Tier 3 incentive<span class="tech">Applies in the top tier</span></span><span class="out" id="p3Out"></span></label>
+          <div class="inp" id="p3Wrap"><input type="number" id="p3" value="30" min="0" max="75" step="1" inputmode="numeric" aria-describedby="p3Hint"><span class="aff post">%</span></div>
+          <div class="slide"><input type="range" id="p3R" value="30" min="0" max="75" step="1" aria-label="Tier 3 incentive, percent"></div>
+          <p class="hint" id="p3Hint">0% – 75% of tier cash</p>
+          <p class="msg err" id="p3Msg"></p>
+          <p class="msg warn" id="p3Warn"></p>
+        </div>
+      </div></div>
+    </div>
+
+    <div class="panel">
+      <div class="panel-hd"><span class="eyebrow">Cash and timing</span></div>
+      <div class="panel-bd"><div class="fields">
+        <div class="f">
+          <label for="cash"><span class="lab">Total distributable cash<span class="tech">Rent plus sale proceeds</span></span><span class="out" id="cashOut"></span></label>
+          <div class="inp" id="cashWrap"><span class="aff pre">$</span>
+            <input type="text" id="cash" value="34,000,000" inputmode="numeric" autocomplete="off" aria-describedby="cashHint"></div>
+          <div class="slide"><input type="range" id="cashR" min="0" max="1000" step="1" aria-label="Total distributable cash"></div>
+          <p class="hint" id="cashHint">$0 – $500,000,000 over the hold</p>
+          <p class="msg err" id="cashMsg"></p>
+        </div>
+        <div class="f">
+          <label for="hold"><span class="lab">Holding period<span class="tech">Years from closing to sale</span></span><span class="out" id="holdOut"></span></label>
+          <div class="inp" id="holdWrap"><input type="number" id="hold" value="5" min="1" max="20" step="1" inputmode="numeric" aria-describedby="holdHint"><span class="aff post">yrs</span></div>
+          <div class="slide"><input type="range" id="holdR" value="5" min="1" max="20" step="1" aria-label="Holding period, years"></div>
+          <p class="hint" id="holdHint">1 – 20 years</p>
+          <p class="msg err" id="holdMsg"></p>
+        </div>
+        <div class="f">
+          <label for="split"><span class="lab">Paid during the hold<span class="tech">The rest is paid at sale</span></span><span class="out" id="splitOut"></span></label>
+          <div class="inp" id="splitWrap"><input type="number" id="split" value="12" min="0" max="100" step="1" inputmode="numeric" aria-describedby="splitHint"><span class="aff post">%</span></div>
+          <div class="slide"><input type="range" id="splitR" value="12" min="0" max="100" step="1" aria-label="Share of cash paid during the hold, percent"></div>
+          <p class="hint" id="splitHint">0% = everything at sale · 100% = nothing at sale</p>
+          <p class="msg err" id="splitMsg"></p>
+        </div>
+      </div></div>
+    </div>
+
+    <p class="sr" id="live" aria-live="polite" aria-atomic="true"></p>
+  </aside>
+
+  <!-- ===================== MAIN ===================== -->
+  <main class="main">
+
+    <!-- 1 · RESULT -->
+    <section class="block" aria-labelledby="h-result">
+      <div class="hero">
+        <div class="hero-top">
+          <div>
+            <div class="eyebrow">Projected outcome</div>
+            <h2 id="h-result" class="sr">Projected outcome</h2>
+          </div>
+          <div class="hero-chips" id="heroChips"></div>
+        </div>
+        <div class="hero-grid">
+          <div class="hero-cell">
+            <div class="who"><i class="dot lp"></i>Investor receives</div>
+            <div class="big" id="rLp">—</div>
+            <div class="sub" id="rLpSub">—</div>
+            <div class="kv">
+              <div><div class="k">Multiple</div><div class="v" id="rLpX">—</div></div>
+              <div><div class="k">Annual return</div><div class="v" id="rLpI">—</div></div>
+            </div>
+          </div>
+          <div class="hero-cell">
+            <div class="who"><i class="dot gp"></i>Sponsor receives</div>
+            <div class="big" id="rGp">—</div>
+            <div class="sub" id="rGpSub">—</div>
+            <div class="kv">
+              <div><div class="k">Multiple</div><div class="v" id="rGpX">—</div></div>
+              <div><div class="k">Annual return</div><div class="v" id="rGpI">—</div></div>
+            </div>
+          </div>
+        </div>
+        <div class="hero-foot" id="heroGates"></div>
+      </div>
+      <div class="capstrip">
+        <div class="c"><div class="k"><i class="dot gp"></i>Sponsor equity</div><div class="v" id="capGp">—</div><div class="s" id="capGpPct">—</div></div>
+        <div class="c"><div class="k"><i class="dot lp"></i>Investor equity</div><div class="v" id="capLp">—</div><div class="s" id="capLpPct">—</div></div>
+        <div class="c"><div class="k">Total equity</div><div class="v" id="capTot">—</div><div class="s" id="capHold">—</div></div>
+      </div>
+
+      <div class="cmp" id="cmp"></div>
+    </section>
+
+    <!-- 2 · WALKTHROUGH -->
+    <section class="block" aria-labelledby="h-walk">
+      <div class="block-hd">
+        <h2 id="h-walk">Guided walkthrough</h2>
+        <span class="note">Seven steps, in plain language</span>
+      </div>
+      <div class="walk">
+        <div class="walk-nar">
+          <div>
+            <div class="w-meta">
+              <span class="w-count">Step <span id="wNum">1</span> of 7</span>
+              <div class="w-dots" id="wDots" role="group" aria-label="Walkthrough steps"></div>
+            </div>
+            <h3 id="wTitle">&nbsp;</h3>
+            <p class="w-text" id="wText"></p>
+          </div>
+          <div class="w-ctrl">
+            <button class="btn ico" id="wBack" type="button" aria-label="Previous step">&#9664;</button>
+            <button class="btn pri" id="wPlay" type="button">Play</button>
+            <button class="btn ico" id="wNext" type="button" aria-label="Next step">&#9654;</button>
+            <button class="btn math" id="wMathBtn" type="button" aria-expanded="false" aria-controls="wMath">Show the math</button>
+          </div>
+        </div>
+        <div class="w-math" id="wMath" hidden></div>
+        <div class="stage">
+          <div class="w-src" id="wSrc">
+            <span class="k">Cash available to distribute over the hold</span>
+            <span class="v" id="wSrcV">—</span>
+          </div>
+          <div class="w-arrow" aria-hidden="true">&#8595;</div>
+          <div id="wRows"></div>
+          <div class="w-buckets">
+            <div class="w-bucket"><div class="k"><i class="dot gp"></i>Sponsor has received</div><div class="v" id="wBgV">$0</div><div class="s" id="wBgS"></div></div>
+            <div class="w-bucket inv"><div class="k"><i class="dot lp"></i>Investor has received</div><div class="v" id="wBlV">$0</div><div class="s" id="wBlS"></div></div>
+          </div>
+        </div>
+      </div>
+      <p class="sr" id="wLive" aria-live="polite" aria-atomic="true"></p>
+    </section>
+
+    <!-- 3 · TIERS -->
+    <section class="block" aria-labelledby="h-tiers">
+      <div class="block-hd">
+        <h2 id="h-tiers">How each tier divides its cash</h2>
+        <span class="note">Percentages apply only to cash passing through that tier</span>
+      </div>
+      <div class="seq" id="seq" role="img" aria-label="Distribution order"></div>
+      <div class="tiers" id="tiers"></div>
+    </section>
+
+    <!-- 4 · TIMELINE -->
+    <section class="block" aria-labelledby="h-tl">
+      <div class="block-hd">
+        <h2 id="h-tl">When the cash arrives</h2>
+        <span class="note">Bar height is cash distributed that year</span>
+      </div>
+      <div class="tl-wrap">
+        <div class="tl" id="tl" role="img" aria-label="Cash distributed each year"></div>
+        <div class="tl-axis" id="tlAxis" aria-hidden="true"></div>
+        <div class="tl-legend">
+          <span><i class="dot lp"></i>Investor</span>
+          <span><i class="dot gp"></i>Sponsor ownership</span>
+          <span><i class="dot pm"></i>Sponsor incentive</span>
+        </div>
+        <p class="tiny" style="margin-top:9px" id="tlNote"></p>
+      </div>
+    </section>
+
+    <!-- 4b · SENSITIVITY -->
+    <section class="block" aria-labelledby="h-heat">
+      <div class="block-hd">
+        <h2 id="h-heat">Where the structure bites</h2>
+        <span class="note">Every cell is a full model — click one to load it</span>
+      </div>
+      <div class="heat-wrap">
+        <div class="heat-ctl">
+          <fieldset class="seg-ctl" id="heatMetric">
+            <legend class="sr">Heatmap measure</legend>
+            <label><input type="radio" name="hm" value="lpIrr" checked><span>Investor return</span></label>
+            <label><input type="radio" name="hm" value="gpShare"><span>Sponsor share of cash</span></label>
+            <label><input type="radio" name="hm" value="tier"><span>Tier reached</span></label>
+          </fieldset>
+          <span class="tiny" id="heatHint"></span>
+        </div>
+        <div class="heat-scroll">
+          <table class="heat" id="heat">
+            <caption id="heatCap"></caption>
+          </table>
+        </div>
+        <p class="heat-axis" id="heatAxis"></p>
+        <div class="heat-key">
+          <span id="heatLo"></span>
+          <span class="heat-ramp" id="heatRamp" aria-hidden="true"></span>
+          <span id="heatHi"></span>
+        </div>
+      </div>
+    </section>
+
+    <!-- 5 · DETAIL -->
+    <section class="block print-break" aria-labelledby="h-detail">
+      <h2 id="h-detail" class="sr">Detail</h2>
+
+      <details class="disc" id="discTable">
+        <summary>Allocation summary<span class="sm">Every tier, side by side</span></summary>
+        <div class="disc-bd">
+          <div class="tbl-scroll">
+            <table class="data" id="tbl">
+              <caption>Amounts shown per $100 of cash passing through each tier.</caption>
+              <thead><tr>
+                <th scope="col">Tier</th><th scope="col">Applies</th><th scope="col">Incentive</th>
+                <th scope="col">Sponsor share</th><th scope="col">Investor share</th>
+                <th scope="col">Sponsor per $100</th><th scope="col">Investor per $100</th>
+              </tr></thead>
+              <tbody id="tblBody"></tbody>
+            </table>
+          </div>
+        </div>
+      </details>
+
+      <details class="disc">
+        <summary>How a waterfall works<span class="sm">Plain-language primer</span></summary>
+        <div class="disc-bd">
+          <div class="primer">
+            <div class="pcard"><span class="num">01</span><h3>A threshold is a target return</h3>
+              <p>Each threshold is an annual return the investor must actually receive before the next tier begins.
+                 Reaching it depends on how much cash comes back and how soon.</p></div>
+            <div class="pcard"><span class="num">02</span><h3>Cash starts in Tier 1</h3>
+              <p>Until the first threshold is met, every dollar is divided strictly by ownership. The sponsor earns
+                 no incentive here.</p></div>
+            <div class="pcard"><span class="num">03</span><h3>Clearing a threshold opens the next tier</h3>
+              <p>Once a threshold is met it stays met. From that point on, additional cash is divided using the next
+                 tier's terms.</p></div>
+            <div class="pcard"><span class="num">04</span><h3>The incentive rewards performance</h3>
+              <p>In higher tiers the sponsor takes a share off the top. What remains is still divided by ownership,
+                 so the sponsor's total share rises.</p></div>
+            <div class="pcard"><span class="num">05</span><h3>Only new cash uses the new terms</h3>
+              <p>Money already distributed is never re-cut. A tier's percentages apply solely to the additional cash
+                 flowing through it.</p></div>
+          </div>
+          <dl class="gloss">
+            <div><dt>Ownership-based split <em>· pro rata</em></dt><dd>Cash divided in proportion to capital contributed.</dd></div>
+            <div><dt>Performance threshold <em>· IRR hurdle</em></dt><dd>The annual return that must be reached before the next tier applies.</dd></div>
+            <div><dt>Sponsor incentive <em>· GP promote</em></dt><dd>The slice of a tier's cash paid to the sponsor ahead of the ownership split.</dd></div>
+            <div><dt>Sponsor <em>· general partner (GP)</em></dt><dd>The partner who operates the investment.</dd></div>
+            <div><dt>Investor <em>· limited partner (LP)</em></dt><dd>The partner who supplies most of the capital.</dd></div>
+            <div><dt>Effective share</dt><dd>Everything a partner receives from a tier — incentive plus ownership-based cash.</dd></div>
+          </dl>
+        </div>
+      </details>
+    </section>
+
+    <footer>
+      <p><b>Illustrative model prepared for educational and analytical use.</b> Distribution terms in any actual
+         venture are governed by the executed partnership or operating agreement, which controls in all cases.
+         Figures shown are outputs of the assumptions entered above.</p>
+      <p>Nothing here is an offer, a solicitation, or investment, legal, or tax advice, and no result should be read
+         as a projection of any particular transaction.</p>
+    </footer>
+  </main>
+</div>
+
+<div class="backdrop" id="backdrop"></div>
+<div class="sheetbar" id="sheetbar">
+  <div class="sum" id="sheetSum"></div>
+  <button class="btn" id="sheetOpen" type="button" aria-expanded="false" aria-controls="rail">Assumptions</button>
+</div>
+
+<script>
+(function(){
+"use strict";
+
+/* ============================================================
+   1 · CALCULATION ENGINE     (no DOM access in this section)
+   Generalised over N tiers: `promotes` has one entry per tier and
+   `hurdles` has one per gate between them.
+   ============================================================ */
+var Engine = (function(){
+
+  function clamp(v, lo, hi){ return Math.min(hi, Math.max(lo, v)); }
+
+  /** One tier's split. Incentive comes off the top; the rest goes by ownership. */
+  function tierSplit(promote, gpOwn, lpOwn){
+    var pm = clamp(promote, 0, 1), rem = 1 - pm;
+    return { promote:pm, remainder:rem, gpPro:rem*gpOwn, lpPro:rem*lpOwn,
+             gpEff:pm + rem*gpOwn, lpEff:rem*lpOwn };
+  }
+
+  /** Annual IRR of a flow vector indexed by year. Bisection; null when unsolvable. */
+  function irr(flows){
+    var neg=false, pos=false, i;
+    for (i=0;i<flows.length;i++){ if(flows[i]<-1e-9) neg=true; if(flows[i]>1e-9) pos=true; }
+    if(!neg||!pos) return null;
+    function npv(r){ var v=0; for(var k=0;k<flows.length;k++) v+=flows[k]/Math.pow(1+r,k); return v; }
+    var lo=-0.9999, hi=10;
+    if(!isFinite(npv(lo))||npv(lo)<0||npv(hi)>0) return null;
+    // 100 bisections narrow an 11-wide bracket to ~1e-29 — far below double
+    // precision, so this is exact for every practical purpose and 2.5x cheaper
+    // than the previous 250, which matters when the heatmap runs 72 models.
+    for(var n=0;n<100;n++){ var m=(lo+hi)/2; if(npv(m)>0) lo=m; else hi=m; }
+    return (lo+hi)/2;
+  }
+
+  /** Distribution schedule: `holdShare` of cash spread evenly across the hold,
+   *  the remainder paid at sale in the final year. No artificial cap — a fully
+   *  pre-sale profile (holdShare = 1) is expressible. */
+  function timeline(totalCash, years, holdShare){
+    var flows = new Array(years+1).fill(0);
+    var share = isFinite(holdShare) ? clamp(holdShare, 0, 1) : 0;
+    var interimTotal = totalCash * share;
+    var per = years > 0 ? interimTotal/years : 0;
+    for (var y=1; y<=years; y++) flows[y] = per;
+    var sale = totalCash - interimTotal;
+    flows[years] += sale;
+    return { flows:flows, per:per, interimTotal:interimTotal, sale:sale };
+  }
+
+  /** Full waterfall.
+   *  A threshold is tracked as a balance on investor capital: it grows at the
+   *  threshold rate and falls with every dollar the investor receives. Zero means
+   *  that annual return has been earned exactly. Because each distribution is
+   *  allocated against tier capacities in sequence, one payment can span several
+   *  tiers within the same period. */
+  function run(a){
+    // --- defensive normalisation: the engine must be safe called directly ---
+    var mode = a.irrMode || "all";            // "all" | "lp" | "none"
+    var gpEquity = Math.max(0, a.gpEquity || 0);
+    var lpEquity = Math.max(0, a.lpEquity || 0);
+    var years    = Math.max(1, Math.round(a.years || 1));
+    var totalCash= Math.max(0, a.totalCash || 0);
+    var promotes = (a.promotes || [0]).map(function(p){ return clamp(p, 0, 1); });
+    var hurdles  = (a.hurdles  || []).slice(0, promotes.length-1).map(function(h){ return Math.max(0, h); });
+    for (var g=1; g<hurdles.length; g++){                 // enforce strictly ascending
+      if (hurdles[g] <= hurdles[g-1]) hurdles[g] = hurdles[g-1] + 1e-6;
+    }
+
+    // With no equity at all there is no ownership basis; attribute it to the
+    // investor so tier shares still total 100% rather than collapsing to zero.
+    var totalEquity = gpEquity + lpEquity;
+    var gpOwn = totalEquity > 0 ? gpEquity/totalEquity : 0;
+    var lpOwn = totalEquity > 0 ? lpEquity/totalEquity : 1;
+    var tiers = promotes.map(function(p){ return tierSplit(p, gpOwn, lpOwn); });
+    var nT = tiers.length;
+
+    var tl = timeline(totalCash, years, a.holdShare);
+    var EPS = Math.max(1e-6, lpEquity*1e-11);
+
+    var balances = hurdles.map(function(){ return lpEquity; });
+    var reached  = hurdles.map(function(){ return null; });
+    var tierCash = tiers.map(function(){ return 0; });
+    var gpByTier = tiers.map(function(){ return 0; });
+    var lpByTier = tiers.map(function(){ return 0; });
+    var pmByTier = tiers.map(function(){ return 0; });
+    var gpFlows = new Array(years+1).fill(0);
+    var lpFlows = new Array(years+1).fill(0);
+    var allFlows= new Array(years+1).fill(0);
+    var schedule = [];
+
+    gpFlows[0] = -gpEquity; lpFlows[0] = -lpEquity; allFlows[0] = -totalEquity;
+
+    for (var y=1; y<=years; y++){
+      for (var b=0;b<balances.length;b++) balances[b] *= (1 + hurdles[b]);
+      var opening = balances.slice();
+
+      var cash = tl.flows[y];
+      allFlows[y] = cash;
+      var row = { year:y, cash:cash, opening:opening, take:[], lp:0, gp:0 };
+
+      for (var t=0; t<nT; t++){
+        var cap;
+        if (t === nT-1){                       // top tier has no gate above it
+          cap = Infinity;
+        } else if (balances[t] <= EPS){
+          cap = 0;                             // this gate is already cleared
+        } else {
+          cap = tiers[t].lpEff > EPS ? balances[t]/tiers[t].lpEff : Infinity;
+        }
+        var take = Math.max(0, Math.min(cash, cap));
+        var lpCut = take * tiers[t].lpEff, gpCut = take * tiers[t].gpEff;
+
+        for (var j=0;j<balances.length;j++) balances[j] -= lpCut;   // every LP dollar counts against every gate
+        cash -= take;
+
+        tierCash[t] += take; gpByTier[t] += gpCut; lpByTier[t] += lpCut;
+        pmByTier[t] += take * tiers[t].promote;
+        row.take.push(take); row.lp += lpCut; row.gp += gpCut;
+      }
+
+      for (var r=0;r<balances.length;r++){
+        if (balances[r] <= EPS && reached[r] === null) reached[r] = y;
+      }
+      row.closing = balances.map(function(v){ return Math.max(0, v); });
+      gpFlows[y] = row.gp; lpFlows[y] = row.lp;
+      schedule.push(row);
+    }
+
+    var gpTotal = gpByTier.reduce(function(x,z){return x+z;},0);
+    var lpTotal = lpByTier.reduce(function(x,z){return x+z;},0);
+
+    return {
+      gpEquity:gpEquity, lpEquity:lpEquity, totalEquity:totalEquity, years:years,
+      totalCash:totalCash, hurdles:hurdles, promotes:promotes,
+      gpOwn:gpOwn, lpOwn:lpOwn, tiers:tiers, timeline:tl, schedule:schedule,
+      tierCash:tierCash, gpByTier:gpByTier, lpByTier:lpByTier, pmByTier:pmByTier,
+      gpTotal:gpTotal, lpTotal:lpTotal, distributed:gpTotal+lpTotal,
+      gpFlows:gpFlows, lpFlows:lpFlows,
+      // `irrMode` lets bulk callers skip solves they do not need
+      gpIrr:  mode==="all" ? irr(gpFlows) : null,
+      lpIrr:  (mode==="all"||mode==="lp") ? irr(lpFlows) : null,
+      dealIrr:mode==="all" ? irr(allFlows) : null,
+      gpMult: gpEquity>0 ? gpTotal/gpEquity : null,
+      lpMult: lpEquity>0 ? lpTotal/lpEquity : null,
+      reached:reached
+    };
+  }
+
+  return { run:run, irr:irr, tierSplit:tierSplit, timeline:timeline };
+})();
+
+/* ============================================================
+   2 · FORMATTING
+   ============================================================ */
+var usd0 = new Intl.NumberFormat("en-US",{style:"currency",currency:"USD",maximumFractionDigits:0});
+var usd2 = new Intl.NumberFormat("en-US",{style:"currency",currency:"USD",minimumFractionDigits:2,maximumFractionDigits:2});
+function money(v){ return usd0.format(Math.round(v||0)); }
+function money2(v){ return usd2.format(v||0); }
+function pct(v,d){ return (v*100).toFixed(d===undefined?1:d)+"%"; }
+function pctRaw(v,d){
+  if(d!==undefined) return v.toFixed(d)+"%";
+  var two=v.toFixed(2);
+  return (two.charAt(two.length-1)==="0"?v.toFixed(1):two)+"%";
+}
+function esc(s){ return String(s).replace(/[&<>"']/g,function(c){
+  return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]; }); }
+
+/** Whole-dollar rounding that still foots to the printed total (largest remainder). */
+function footRound(vals,total){
+  var target=Math.round(total);
+  var base=vals.map(function(v){return Math.floor(v);});
+  if(!base.length) return base;
+  var resid=Math.round(target-base.reduce(function(a,b){return a+b;},0));
+  var order=vals.map(function(v,i){return {i:i,f:v-Math.floor(v)};}).sort(function(a,b){return b.f-a.f;});
+  var step=resid>0?1:-1;
+  for(var k=0;k<Math.abs(resid);k++) base[order[k%order.length].i]+=step;
+  return base;
+}
+function moneySet(vals,total){ return footRound(vals,total).map(function(v){return usd0.format(v);}); }
+/** Two shares of a whole, printed so they always total exactly 100. */
+function pair(aFrac,d){
+  var dp=d===undefined?1:d, A=+(aFrac*100).toFixed(dp), B=+(100-A).toFixed(dp);
+  return [A.toFixed(dp)+"%",B.toFixed(dp)+"%"];
+}
+
+/* ============================================================
+   3 · CONFIGURATION
+   ============================================================ */
+var TIERS = [
+  { name:"Tier 1", role:"First priority",  promoteKey:null },
+  { name:"Tier 2", role:"Second priority", promoteKey:"p2" },
+  { name:"Tier 3", role:"Residual",        promoteKey:"p3" }
+];
+var GATES = ["h1","h2"];
+
+var BASE = { gpEq:2000000, lpEq:18000000, h1:8, h2:14, p2:20, p3:30, cash:34000000, hold:5, split:12 };
+
+var SPEC = {
+  gpEq :{min:0, max:100000000, money:true, step:50000,  label:"Sponsor equity"},
+  lpEq :{min:1, max:100000000, money:true, step:50000,  label:"Investor equity"},
+  h1   :{min:0, max:30,  label:"First threshold"},
+  h2   :{min:0, max:40,  label:"Second threshold"},
+  p2   :{min:0, max:75,  label:"Tier 2 incentive"},
+  p3   :{min:0, max:75,  label:"Tier 3 incentive"},
+  cash :{min:0, max:500000000, money:true, step:100000, label:"Total distributable cash"},
+  hold :{min:1, max:20,  int:true, label:"Holding period"},
+  split:{min:0, max:100, int:true, label:"Share paid during the hold"}
+};
+var KEYS = Object.keys(SPEC);
+var URLKEY = {gpEq:"g",lpEq:"l",h1:"a",h2:"b",p2:"c",p3:"d",cash:"m",hold:"n",split:"s"};
+
+var el={}, slider={};
+KEYS.forEach(function(k){ el[k]=document.getElementById(k); slider[k]=document.getElementById(k+"R"); });
+function $(id){ return document.getElementById(id); }
+
+/* money sliders use a square-law mapping so the low end stays controllable */
+function posOf(v,k){ return Math.round(1000*Math.sqrt(Math.max(0,v)/SPEC[k].max)); }
+function valOf(p,k){ var s=SPEC[k].step; return Math.round(SPEC[k].max*Math.pow(p/1000,2)/s)*s; }
+
+function say(msg){
+  var n=$("live"); if(!n) return;
+  n.textContent=""; setTimeout(function(){ n.textContent=msg; },40);
+}
+
+/* ============================================================
+   4 · STATE + VALIDATION
+   ============================================================ */
+var state = Object.assign({}, BASE);
+
+function flag(key,text,kind){
+  var m=$(key+"Msg"), wrap=$(key+"Wrap"), input=el[key];
+  if(!m) return;
+  m.textContent=text||"";
+  m.className="msg "+(kind||"err")+(text?" show":"");
+  if(wrap) wrap.classList.toggle("bad",!!text);
+  if(input){
+    input.setAttribute("aria-invalid",text?"true":"false");
+    var ids=[key+"Hint"]; if(text) ids.push(key+"Msg");
+    input.setAttribute("aria-describedby",ids.join(" "));
+  }
+}
+function softFlag(id,text){
+  var m=$(id); if(!m) return;
+  m.textContent=text||""; m.className="msg warn"+(text?" show":"");
+}
+function boundText(k,v){
+  var s=SPEC[k];
+  if(s.money) return money(v);
+  if(k==="hold") return v+(v===1?" year":" years");
+  return pctRaw(v, v%1===0?0:2);
+}
+function rawValue(k){
+  var s=SPEC[k], t=el[k].value;
+  return s.money ? parseFloat(String(t).replace(/[^0-9.]/g,"")) : parseFloat(t);
+}
+
+/** Read + validate every control into `state`. */
+function readInputs(){
+  KEYS.forEach(function(k){
+    var s=SPEC[k], v=rawValue(k);
+    if(!isFinite(v)){ flag(k,s.label+" must be a number."); v=BASE[k]; }
+    else if(v<s.min){ flag(k,s.label+" cannot be below "+boundText(k,s.min)+"."); v=s.min; }
+    else if(v>s.max){ flag(k,s.label+" cannot exceed "+boundText(k,s.max)+"."); v=s.max; }
+    else flag(k,"");
+    if(s.int) v=Math.round(v);
+    if(s.money) v=Math.round(v);
+    state[k]=v;
+  });
+  if(state.h2<=state.h1){
+    state.h2=Math.min(SPEC.h2.max, state.h1+0.25);
+    flag("h2","The second threshold must be above the first. Adjusted to "+pctRaw(state.h2)+".");
+  }
+  softFlag("p3Warn", state.p3<state.p2
+    ? "Tier 3 pays a smaller incentive than Tier 2. Incentives normally rise with each tier — confirm this is intended."
+    : "");
+  return state;
+}
+
+function assumptions(){
+  return {
+    gpEquity:state.gpEq, lpEquity:state.lpEq,
+    promotes:[0, state.p2/100, state.p3/100],
+    hurdles:[state.h1/100, state.h2/100],
+    totalCash:state.cash, years:state.hold, holdShare:state.split/100
+  };
+}
+
+/* ---- URL round-trip ---- */
+function writeUrl(){
+  var parts=KEYS.map(function(k){ return URLKEY[k]+"="+state[k]; });
+  try{ history.replaceState(null,"","#"+parts.join("&")); }catch(e){}
+}
+function readUrl(){
+  var h=(location.hash||"").replace(/^#/,""); if(!h) return false;
+  var map={}, ok=false;
+  h.split("&").forEach(function(p){ var kv=p.split("="); if(kv.length===2) map[kv[0]]=kv[1]; });
+  KEYS.forEach(function(k){
+    var raw=map[URLKEY[k]];
+    if(raw!==undefined && isFinite(parseFloat(raw))){ state[k]=parseFloat(raw); ok=true; }
+  });
+  return ok;
+}
+function pushToControls(){
+  KEYS.forEach(function(k){
+    var s=SPEC[k], v=state[k];
+    if(document.activeElement!==el[k]) el[k].value = s.money ? Number(v).toLocaleString("en-US") : String(v);
+    if(slider[k]) slider[k].value = s.money ? posOf(v,k) : v;
+  });
+}
+
+/* ============================================================
+   5 · RENDER  (coalesced to one pass per animation frame)
+   ============================================================ */
+var frameQueued=false, R=null;
+function requestRender(){
+  if(frameQueued) return;
+  frameQueued=true;
+  (window.requestAnimationFrame||function(f){setTimeout(f,16);})(function(){
+    frameQueued=false; render();
+  });
+}
+
+function render(){
+  readInputs();
+  var A=assumptions();
+  R=Engine.run(A);
+  pushToControls();
+  paintReadouts();
+  paintHero();
+  paintSeq();
+  paintTiers();
+  paintTimeline();
+  paintTable();
+  paintSheet();
+  Walk.update(R,state);
+  Compare.paint(R);
+  Heat.schedule();
+  writeUrl();
+}
+
+function paintReadouts(){
+  $("gpEqOut").textContent=money(state.gpEq);
+  $("lpEqOut").textContent=money(state.lpEq);
+  $("h1Out").textContent=pctRaw(state.h1);
+  $("h2Out").textContent=pctRaw(state.h2);
+  $("p2Out").textContent=pctRaw(state.p2,0);
+  $("p3Out").textContent=pctRaw(state.p3,0);
+  $("cashOut").textContent=money(state.cash);
+  $("holdOut").textContent=state.hold+(state.hold===1?" yr":" yrs");
+  $("splitOut").textContent=pctRaw(state.split,0);
+}
+
+function paintHero(){
+  var tot=moneySet([R.gpTotal,R.lpTotal],R.distributed);   // sponsor, investor
+  $("rGp").textContent=tot[0];
+  $("rLp").textContent=tot[1];
+  $("rGpSub").textContent="on "+money(R.gpEquity)+" invested over "+R.years+(R.years===1?" year":" years");
+  $("rLpSub").textContent="on "+money(R.lpEquity)+" invested over "+R.years+(R.years===1?" year":" years");
+  $("rGpX").textContent=R.gpMult!==null?R.gpMult.toFixed(2)+"×":"—";
+  $("rLpX").textContent=R.lpMult!==null?R.lpMult.toFixed(2)+"×":"—";
+  $("rGpI").textContent=R.gpIrr!==null?pct(R.gpIrr):"—";
+  $("rLpI").textContent=R.lpIrr!==null?pct(R.lpIrr):"—";
+
+  $("heroChips").innerHTML=
+     '<span class="chip">'+esc(money(R.totalCash))+' distributable</span>'
+   + '<span class="chip">'+esc(pctRaw(state.h1))+' / '+esc(pctRaw(state.h2))+' thresholds</span>'
+   + '<span class="chip">'+esc(pctRaw(state.p2,0))+' / '+esc(pctRaw(state.p3,0))+' incentive</span>';
+
+  var gates="";
+  R.reached.forEach(function(yr,i){
+    var rate=i===0?state.h1:state.h2;
+    gates+='<span class="gate-pill '+(yr?"hit":"miss")+'">'+esc(pctRaw(rate))+' threshold '
+         + (yr?"reached in year "+yr:"not reached")+'</span>';
+  });
+  gates+='<span class="tiny" style="color:#9fb4d0;margin-left:auto">Thresholds measured on the investor’s annual return</span>';
+  $("heroGates").innerHTML=gates;
+
+  var own=pair(R.gpOwn,1);
+  $("capGp").textContent=money(R.gpEquity);
+  $("capLp").textContent=money(R.lpEquity);
+  $("capTot").textContent=money(R.totalEquity);
+  $("capGpPct").textContent=own[0]+" ownership";
+  $("capLpPct").textContent=own[1]+" ownership";
+  $("capHold").textContent=R.years+(R.years===1?" year":" years")+" hold · "+pctRaw(state.split,0)+" paid before sale";
+}
+
+function segs(t,forStack){
+  var cls=forStack?["seg-lp","seg-gp","seg-pm"]:["seg-lp","seg-gp","seg-pm"];
+  var lp=pair(t.gpEff,1)[1];
+  var h=""
+   +'<i class="'+cls[0]+'" style="width:'+(t.lpEff*100).toFixed(3)+'%">'+(t.lpEff>=.2?lp:(t.lpEff>=.11?lp:""))+'</i>'
+   +'<i class="'+cls[1]+'" style="width:'+(t.gpPro*100).toFixed(3)+'%">'+(t.gpPro>=.13?pct(t.gpPro,0):"")+'</i>';
+  if(t.promote>0) h+='<i class="'+cls[2]+'" style="width:'+(t.promote*100).toFixed(3)+'%">'+(t.promote>=.13?"+"+pct(t.promote,0):"")+'</i>';
+  return h;
+}
+
+function paintSeq(){
+  var h="";
+  TIERS.forEach(function(cfg,i){
+    h+='<span class="s-node">'+cfg.name+'</span>';
+    if(i<GATES.length){
+      h+='<span class="s-gate"><span class="s-arw" aria-hidden="true">&#8594;</span>'
+       + 'clear <b>'+esc(pctRaw(state[GATES[i]]))+'</b><span class="s-arw" aria-hidden="true">&#8594;</span></span>';
+    }
+  });
+  var sq=$("seq");
+  sq.innerHTML=h;
+  sq.setAttribute("aria-label","Order of distributions: Tier 1, then "+pctRaw(state.h1)
+    +" threshold, then Tier 2, then "+pctRaw(state.h2)+" threshold, then Tier 3.");
+}
+
+function paintTiers(){
+  var when=[
+    "Applies to all cash until the investor’s annual return reaches "+pctRaw(state.h1)+".",
+    "Applies once "+pctRaw(state.h1)+" is reached, until the investor reaches "+pctRaw(state.h2)+".",
+    "Applies to every dollar after "+pctRaw(state.h2)+" is reached. No further threshold."
+  ];
+  var html="";
+  R.tiers.forEach(function(t,i){
+    var e=pair(t.gpEff,1);                       // [sponsor, investor]
+    var promoted=t.promote>0;
+    var rate=promoted?(i===1?state.p2:state.p3):0;
+    var exp = promoted
+      ? "The sponsor takes "+pctRaw(rate,0)+" of this tier’s cash first. The remaining "
+        +pctRaw(100-rate,0)+" is divided by ownership."
+      : "All cash is divided strictly by ownership. The sponsor earns no incentive in this tier.";
+
+    var C=100, pm=C*t.promote, rem=C-pm;
+    var led=""
+      +'<div class="l"><span>Cash entering the tier</span><span>'+money2(C)+'</span></div>'
+      +(promoted?'<div class="l pm"><span>Less sponsor incentive</span><span>− '+money2(pm)+'</span></div>':"")
+      +'<div class="l"><span>Left to divide</span><span>'+money2(rem)+'</span></div>'
+      +'<div class="l ind"><span>Sponsor ownership share</span><span>'+money2(C*t.gpPro)+'</span></div>'
+      +'<div class="l ind"><span>Investor ownership share</span><span>'+money2(C*t.lpPro)+'</span></div>'
+      +'<div class="l sum gp"><span>Sponsor total</span><span>'+money2(C*t.gpEff)+'</span></div>'
+      +'<div class="l sum lp"><span>Investor total</span><span>'+money2(C*t.lpEff)+'</span></div>';
+
+    html+='<article class="tier'+(promoted?" promoted":"")+'">'
+      +'<div class="tier-hd"><div class="row"><span class="n">'+TIERS[i].name+'</span>'
+      +'<span class="r">'+TIERS[i].role+'</span></div>'
+      +'<div class="when">'+esc(when[i])+'</div></div>'
+      +'<div class="tier-metrics">'
+      +'<div><span class="k">Incentive</span><span class="v '+(promoted?"pm":"off")+'">'+(promoted?pctRaw(rate,0):"None")+'</span></div>'
+      +'<div><span class="k">Sponsor</span><span class="v gp">'+e[0]+'</span></div>'
+      +'<div><span class="k">Investor</span><span class="v lp">'+e[1]+'</span></div></div>'
+      +'<div class="tier-bd">'
+      +'<div class="stack" role="img" aria-label="'+esc(TIERS[i].name+" allocation: investor "+e[1]+", sponsor "+e[0]
+          +(promoted?" including a "+pctRaw(rate,0)+" incentive":""))+'">'+segs(t,true)+'</div>'
+      +'<p class="exp">'+esc(exp)+'</p>'
+      +'<div class="led"><div class="h">Follow $100 through this tier</div>'+led+'</div>'
+      +'</div></article>';
+  });
+  $("tiers").innerHTML=html;
+}
+
+function paintTimeline(){
+  var S=R.schedule;
+  var max=Math.max.apply(null,S.map(function(r){return r.cash;}).concat([1]));
+  var bars="", axis="";
+  S.forEach(function(r){
+    var hpc = max>0 ? (r.cash/max)*100 : 0;
+    var inner="";
+    if(r.cash>0){
+      // shares of THIS year's cash, by tier composition
+      var lpY=0, gpY=0, pmY=0;
+      r.take.forEach(function(tk,t){
+        lpY += tk*R.tiers[t].lpEff; gpY += tk*R.tiers[t].gpPro; pmY += tk*R.tiers[t].promote;
+      });
+      var tot=lpY+gpY+pmY||1;
+      inner ='<i class="seg-lp" style="height:'+(lpY/tot*100).toFixed(2)+'%"></i>'
+            +'<i class="seg-gp" style="height:'+(gpY/tot*100).toFixed(2)+'%"></i>'
+            +'<i class="seg-pm" style="height:'+(pmY/tot*100).toFixed(2)+'%"></i>';
+    }
+    var flags="";
+    R.reached.forEach(function(yr,i){
+      if(yr===r.year){
+        flags+='<span class="tl-flag'+(flags?" two":"")+'">'+esc(pctRaw(i===0?state.h1:state.h2))+' met</span>';
+      }
+    });
+    bars+='<div class="tl-col">'+flags+'<div class="tl-bar" style="height:'+Math.max(hpc,r.cash>0?3:1).toFixed(2)+'%">'+inner+'</div></div>';
+    axis+='<span>'+(S.length>12 && r.year%2===0 && r.year!==S.length ? "" : r.year)+'</span>';
+  });
+  $("tl").innerHTML=bars;
+  $("tlAxis").innerHTML=axis;
+  $("tl").setAttribute("aria-label",
+    "Cash distributed each year over "+R.years+(R.years===1?" year":" years")+", totalling "+money(R.totalCash)
+    +". "+(R.reached[0]?"First threshold met in year "+R.reached[0]+". ":"First threshold not met. ")
+    +(R.reached[1]?"Second threshold met in year "+R.reached[1]+".":"Second threshold not met."));
+
+  var t=R.timeline;
+  $("tlNote").textContent = t.interimTotal>0
+    ? money(t.per)+" is distributed at the end of each year, with "+money(t.sale)+" paid on sale in year "+R.years+"."
+    : "No cash is distributed during the hold — the full "+money(t.sale)+" is paid on sale in year "+R.years+".";
+}
+
+function paintTable(){
+  var ranges=[
+    "Up to "+pctRaw(state.h1),
+    pctRaw(state.h1)+" to "+pctRaw(state.h2),
+    "Above "+pctRaw(state.h2)
+  ];
+  var html="";
+  R.tiers.forEach(function(t,i){
+    var e=pair(t.gpEff,1);
+    var rate=i===0?0:(i===1?state.p2:state.p3);
+    html+="<tr>"
+      +'<td><span class="tn">'+TIERS[i].name+'</span><span class="ts">'
+        +(i===0?"Ownership split only":"Incentive tier")+'</span></td>'
+      +"<td>"+esc(ranges[i])+"</td>"
+      +'<td class="pm">'+(t.promote>0?pctRaw(rate,0):"—")+"</td>"
+      +'<td class="gp">'+e[0]+"</td>"
+      +'<td class="lp">'+e[1]+"</td>"
+      +'<td class="gp">'+money2(100*t.gpEff)+"</td>"
+      +'<td class="lp">'+money2(100*t.lpEff)+"</td>"
+      +"</tr>";
+  });
+  $("tblBody").innerHTML=html;
+}
+
+function paintSheet(){
+  var tot=moneySet([R.gpTotal,R.lpTotal],R.distributed);
+  $("sheetSum").innerHTML="<b>"+esc(money(R.totalEquity))+"</b> equity · "
+    + esc(pctRaw(state.h1))+"/"+esc(pctRaw(state.h2))+" · investor <b>"+esc(tot[1])+"</b>";
+}
+
+/* ============================================================
+   5b · SCENARIO COMPARISON
+   Pin a scenario, keep editing, and see both plus the difference.
+   The baseline stores assumptions only and is re-run every render,
+   so it can never drift out of step with the engine.
+   ============================================================ */
+var Compare=(function(){
+  var baseline=null;
+
+  var ROWS=[
+    {grp:"Investor"},
+    {k:"Proceeds",       get:function(R){return R.lpTotal;},                fmt:money,  kind:"money"},
+    {k:"Equity multiple",get:function(R){return R.lpMult;},                 fmt:mult,   kind:"mult"},
+    {k:"Annual return",  get:function(R){return R.lpIrr===null?null:R.lpIrr*100;}, fmt:ptsFmt, kind:"pts"},
+    {grp:"Sponsor"},
+    {k:"Proceeds",       get:function(R){return R.gpTotal;},                fmt:money,  kind:"money"},
+    {k:"Equity multiple",get:function(R){return R.gpMult;},                 fmt:mult,   kind:"mult"},
+    {k:"Annual return",  get:function(R){return R.gpIrr===null?null:R.gpIrr*100;}, fmt:ptsFmt, kind:"pts"},
+    {grp:"Structure"},
+    {k:"Sponsor share of all cash", get:function(R){return R.distributed>0?R.gpTotal/R.distributed*100:null;},
+     fmt:ptsFmt, kind:"pts"},
+    {k:"Cash reaching Tier 3", get:function(R){return R.tierCash[2];}, fmt:money, kind:"money"},
+    {k:"Highest tier reached", get:function(R){return R.tierCash[2]>0.5?3:(R.tierCash[1]>0.5?2:1);},
+     fmt:function(v){return "Tier "+v;}, kind:"tier"}
+  ];
+  function mult(v){ return v===null?"—":v.toFixed(2)+"×"; }
+  function ptsFmt(v){ return v===null?"—":v.toFixed(1)+"%"; }
+
+  function delta(row,a,b){
+    if(a===null||b===null||!isFinite(a)||!isFinite(b)) return {t:"—",c:"flat"};
+    var d=b-a;
+    var tiny = row.kind==="money" ? Math.abs(d)<0.5 : Math.abs(d)<0.05;
+    if(row.kind==="tier"){
+      if(d===0) return {t:"same",c:"flat"};
+      return {t:(d>0?"+":"")+d+" tier"+(Math.abs(d)===1?"":"s"), c:d>0?"up":"dn"};
+    }
+    if(tiny) return {t:"no change",c:"flat"};
+    var s=d>0?"+":"−", m=Math.abs(d);
+    var t = row.kind==="money" ? s+money(m)
+          : row.kind==="mult"  ? s+m.toFixed(2)+"×"
+          : s+m.toFixed(1)+" pts";
+    return {t:t,c:d>0?"up":"dn"};
+  }
+
+  function changedChips(){
+    var out=[];
+    KEYS.forEach(function(k){
+      if(baseline[k]===state[k]) return;
+      var s=SPEC[k];
+      var f=function(v){ return s.money?money(v):(k==="hold"?v+(v===1?" yr":" yrs"):pctRaw(v,s.int?0:undefined)); };
+      out.push(esc(SPEC[k].label)+" "+esc(f(baseline[k]))+" → "+esc(f(state[k])));
+    });
+    return out;
+  }
+
+  function paint(Rlive){
+    var box=$("cmp");
+    if(!baseline){
+      box.innerHTML='<div class="cmp-idle"><span class="t">Pin this scenario, then change any assumption to see '
+        +'exactly what moved.</span><button class="btn" id="cmpPin" type="button">Pin as baseline</button></div>';
+      $("cmpPin").addEventListener("click",function(){
+        baseline=Object.assign({},state);
+        render();
+        say("Baseline pinned. Change an assumption to compare.");
+      });
+      return;
+    }
+
+    var saved=Object.assign({},state);        // run the baseline through the same engine
+    Object.assign(state,baseline);
+    var Rbase=Engine.run(assumptions());
+    Object.assign(state,saved);
+
+    var chips=changedChips();
+    var body="";
+    ROWS.forEach(function(row){
+      if(row.grp){ body+='<tr class="grp"><td colspan="4">'+esc(row.grp)+'</td></tr>'; return; }
+      var a=row.get(Rbase), b=row.get(Rlive), d=delta(row,a,b);
+      body+="<tr><td>"+esc(row.k)+"</td>"
+          + '<td class="a">'+esc(row.fmt(a))+"</td>"
+          + '<td class="b">'+esc(row.fmt(b))+"</td>"
+          + '<td class="dl '+d.c+'">'+esc(d.t)+"</td></tr>";
+    });
+
+    box.innerHTML=
+      '<div class="cmp-hd"><h3>Baseline vs current</h3>'
+      + '<button class="btn" id="cmpSwap" type="button">Make baseline current</button>'
+      + '<button class="btn" id="cmpRepin" type="button">Re-pin</button>'
+      + '<button class="btn" id="cmpClear" type="button">Clear</button></div>'
+      + '<div class="cmp-diff">'
+      + (chips.length ? chips.map(function(c){return '<span class="d">'+c+'</span>';}).join("")
+                      : '<span class="none">Identical to the baseline — change an assumption to see the effect.</span>')
+      + '</div>'
+      + '<div class="cmp-tbl"><table><caption class="sr">Baseline compared with the current scenario</caption>'
+      + '<thead><tr><th scope="col">Measure</th><th scope="col">Baseline</th><th scope="col">Current</th>'
+      + '<th scope="col">Difference</th></tr></thead><tbody>'+body+'</tbody></table></div>';
+
+    $("cmpClear").addEventListener("click",function(){ baseline=null; render(); say("Baseline cleared."); });
+    $("cmpRepin").addEventListener("click",function(){
+      baseline=Object.assign({},state); render(); say("Baseline re-pinned to the current scenario.");
+    });
+    $("cmpSwap").addEventListener("click",function(){
+      var b=baseline; baseline=Object.assign({},state);
+      Object.assign(state,b); pushToControls(); render();
+      say("Loaded the baseline scenario.");
+    });
+  }
+  return { paint:paint, has:function(){return !!baseline;} };
+})();
+
+/* ============================================================
+   5c · SENSITIVITY HEATMAP
+   72 independent models across holding period x distributable cash.
+   Recomputed on an idle timer rather than per keystroke, and with
+   IRR solves skipped for measures that do not need them.
+   ============================================================ */
+var Heat=(function(){
+  var metric="lpIrr", timer=null;
+
+  var META={
+    lpIrr  :{label:"Investor annual return", hint:"Where the investor's own return lands.",
+             fmt:function(v){return v===null?"—":v.toFixed(0)+"%";}, irr:"lp"},
+    gpShare:{label:"Sponsor share of all cash", hint:"How much of every dollar the sponsor ends up with.",
+             fmt:function(v){return v===null?"—":v.toFixed(0)+"%";}, irr:"none"},
+    tier   :{label:"Highest tier reached", hint:"Which tier the deal actually gets to.",
+             fmt:function(v){return v===null?"—":"T"+v;}, irr:"none"}
+  };
+
+  function axes(){
+    var holds=[];
+    var start=Math.max(1,Math.min(state.hold-3,20-7));
+    for(var i=0;i<8 && start+i<=20;i++) holds.push(start+i);
+    var basis=state.cash>0?state.cash:Math.max(1,state.gpEq+state.lpEq)*2;
+    var cashes=[];
+    for(var j=0;j<9;j++){
+      var step=SPEC.cash.step;
+      cashes.push(Math.max(0,Math.round(basis*(0.4+j*0.2)/step)*step));
+    }
+    return {holds:holds,cashes:cashes};
+  }
+
+  function value(R){
+    if(metric==="lpIrr")   return R.lpIrr===null?null:R.lpIrr*100;
+    if(metric==="gpShare") return R.distributed>0?R.gpTotal/R.distributed*100:null;
+    return R.tierCash[2]>0.5?3:(R.tierCash[1]>0.5?2:1);
+  }
+
+  /* light -> dark ramp between the warm surface and navy */
+  function ramp(t){
+    var a=[244,242,238], b=[18,37,64], o=[];
+    t=Math.max(0,Math.min(1,t));
+    for(var i=0;i<3;i++) o.push(Math.round(a[i]+(b[i]-a[i])*t));
+    return o;
+  }
+  function rgbCss(c){ return "rgb("+c[0]+","+c[1]+","+c[2]+")"; }
+  /* Pick cell ink so every cell clears 4.5:1.
+     Black passes once background luminance >= 0.175; white passes while it is
+     <= 0.183. Those two ranges overlap, so black/white covers the whole ramp —
+     a softer ink such as #1b212a would leave mid-tones with no passing option. */
+  function inkOn(c){
+    var f=c.map(function(v){ v/=255; return v<=0.03928?v/12.92:Math.pow((v+0.055)/1.055,2.4); });
+    var L=0.2126*f[0]+0.7152*f[1]+0.0722*f[2];
+    return L>0.18?"#000000":"#ffffff";
+  }
+
+  function build(){
+    var ax=axes(), m=META[metric];
+    var saved={cash:state.cash,hold:state.hold};
+    var grid=[], lo=Infinity, hi=-Infinity;
+
+    ax.holds.forEach(function(h){
+      var row=[];
+      ax.cashes.forEach(function(c){
+        state.cash=c; state.hold=h;
+        var A=assumptions(); A.irrMode=m.irr;
+        var r=Engine.run(A);
+        var v=value(r);
+        if(v!==null && isFinite(v)){ if(v<lo) lo=v; if(v>hi) hi=v; }
+        row.push({v:v,cash:c,hold:h,gp:r.gpTotal,lp:r.lpTotal});
+      });
+      grid.push(row);
+    });
+    state.cash=saved.cash; state.hold=saved.hold;
+    if(!isFinite(lo)){ lo=0; hi=1; }
+    if(metric==="tier"){ lo=1; hi=3; }
+    if(hi-lo<1e-9) hi=lo+1;
+
+    var html='<thead><tr><th scope="col">Hold</th>';
+    ax.cashes.forEach(function(c){ html+='<th scope="col">'+esc(shortMoney(c))+'</th>'; });
+    html+='</tr></thead><tbody>';
+
+    grid.forEach(function(row,ri){
+      html+='<tr><th scope="row">'+ax.holds[ri]+' yr'+(ax.holds[ri]===1?"":"s")+'</th>';
+      row.forEach(function(cell){
+        var t=cell.v===null?0:(cell.v-lo)/(hi-lo);
+        var col=ramp(t);
+        var now=(cell.hold===state.hold && Math.abs(cell.cash-state.cash)<SPEC.cash.step/2);
+        var label=m.label+" "+m.fmt(cell.v)+" if "+shortMoney(cell.cash)
+                + " is distributed over "+cell.hold+(cell.hold===1?" year":" years")
+                + ". Investor "+money(cell.lp)+", sponsor "+money(cell.gp)
+                + ". Select to load this scenario.";
+        html+='<td><button type="button" class="cell'+(now?" now":"")+'"'
+            + ' style="background:'+rgbCss(col)+';color:'+inkOn(col)+'"'
+            + ' data-c="'+cell.cash+'" data-h="'+cell.hold+'"'
+            + ' aria-label="'+esc(label)+'">'+esc(m.fmt(cell.v))+'</button></td>';
+      });
+      html+='</tr>';
+    });
+    html+='</tbody>';
+
+    var tbl=$("heat");
+    tbl.innerHTML='<caption id="heatCap">'+esc(m.label)+' across '+ax.holds.length+' holding periods and '
+      + ax.cashes.length+' cash outcomes. The gold outline marks your current scenario.</caption>'+html;
+
+    $("heatHint").textContent=m.hint;
+    $("heatAxis").textContent="Columns: total distributable cash, from 40% to 200% of your current "
+      + money(state.cash)+". Rows: holding period. Everything else stays as you set it.";
+    $("heatLo").textContent=m.fmt(lo);
+    $("heatHi").textContent=m.fmt(hi);
+    var rampHtml="";
+    for(var s=0;s<=10;s++) rampHtml+='<i style="background:'+rgbCss(ramp(s/10))+'"></i>';
+    $("heatRamp").innerHTML=rampHtml;
+
+    tbl.querySelectorAll(".cell").forEach(function(b){
+      b.addEventListener("click",function(){
+        state.cash=parseFloat(b.getAttribute("data-c"));
+        state.hold=parseFloat(b.getAttribute("data-h"));
+        pushToControls();
+        render();
+        say("Loaded "+shortMoney(state.cash)+" over "+state.hold+" years.");
+      });
+    });
+  }
+
+  function shortMoney(v){
+    if(v>=1e9) return "$"+(v/1e9).toFixed(v>=1e10?0:1)+"B";
+    if(v>=1e6) return "$"+(v/1e6).toFixed(v>=1e8?0:1)+"M";
+    if(v>=1e3) return "$"+Math.round(v/1e3)+"k";
+    return "$"+Math.round(v);
+  }
+
+  /* Debounced: a slider drag must not trigger 72 models per frame. */
+  function schedule(){
+    clearTimeout(timer);
+    timer=setTimeout(build,140);
+  }
+  function init(){
+    $("heatMetric").addEventListener("change",function(e){
+      if(e.target.name==="hm"){ metric=e.target.value; build(); }
+    });
+  }
+  return { init:init, schedule:schedule, build:build };
+})();
+
+/* ============================================================
+   6 · GUIDED WALKTHROUGH
+   ============================================================ */
+var Walk=(function(){
+  var COUNT=7, idx=0, playing=false, timer=null, model=null, mathOpen=false;
+
+  function reduced(){ return !!(window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches); }
+
+  /* ---------- narrative ---------- */
+  function script(R,s){
+    var own=pair(R.gpOwn,1), e2=pair(R.tiers[1].gpEff,1), e3=pair(R.tiers[2].gpEff,1);
+    var t1c=R.tierCash[0], t2c=R.tierCash[1], t3c=R.tierCash[2];
+    var yrs=R.years+(R.years===1?" year":" years");
+    var got1=R.reached[0]!==null, got2=R.reached[1]!==null;
+    var out=[];
+
+    out.push({t:"Two partners put up the money",
+      x:"The sponsor contributes <b>"+money(R.gpEquity)+"</b> and the investor contributes <b>"+money(R.lpEquity)
+       +"</b>. That fixes who owns what: <b>"+own[0]+"</b> sponsor, <b>"+own[1]+"</b> investor. Those percentages "
+       +"decide how cash is shared before any incentive applies."});
+
+    out.push({t:"The investment returns cash",
+      x:"Over "+yrs+" the property produces rent and is eventually sold, generating <b>"+money(R.totalCash)
+       +"</b> to hand back. It does not all get shared the same way — it passes through three tiers, in order."});
+
+    out.push({t:"Tier 1 — everyone shares by ownership",
+      x:t1c>0
+        ? "The first <b>"+money(t1c)+"</b> is divided strictly by ownership: <b>"+own[0]+"</b> to the sponsor, <b>"
+          +own[1]+"</b> to the investor. The sponsor earns no incentive here."
+        : "There is no cash to distribute, so nothing flows through Tier 1. Raise the total distributable cash to see the waterfall run."});
+
+    out.push({t:got1?"The first threshold is cleared":"The first threshold is never cleared",
+      x:got1
+        ? "By year <b>"+R.reached[0]+"</b> the investor had been paid back enough — and early enough — to earn an "
+          +"annual return of <b>"+pctRaw(s.h1)+"</b>. That unlocks Tier 2. Cash already paid out is never re-divided; "
+          +"only what arrives from here on uses the new terms."
+        : "The investor’s return never reached <b>"+pctRaw(s.h1)+"</b>, so the waterfall stayed in Tier 1 and the "
+          +"sponsor earned no incentive at all. That is the point of a waterfall: the sponsor is rewarded only after "
+          +"the investor’s target return is actually delivered."});
+
+    out.push({t:t2c>0?"Tier 2 — the sponsor earns an incentive":"Tier 2 — never reached",
+      x:t2c>0
+        ? "Of the <b>"+money(t2c)+"</b> flowing through Tier 2, the sponsor takes <b>"+pctRaw(s.p2,0)
+          +"</b> off the top — <b>"+money(R.pmByTier[1])+"</b>. What remains is still split by ownership, so the "
+          +"sponsor’s share of this tier rises from "+own[0]+" to <b>"+e2[0]+"</b>."
+        : "Because the first threshold was never cleared, no money reached Tier 2. Had it done so, the sponsor would "
+          +"have taken <b>"+pctRaw(s.p2,0)+"</b> off the top, lifting its share to <b>"+e2[0]+"</b>."});
+
+    out.push({t:t3c>0?"Tier 3 — the top tier":"Tier 3 — never reached",
+      x:t3c>0
+        ? "The investor also cleared <b>"+pctRaw(s.h2)+"</b>"+(got2?" in year <b>"+R.reached[1]+"</b>":"")
+          +", opening the final tier. The incentive rises to <b>"+pctRaw(s.p3,0)+"</b> on the remaining <b>"
+          +money(t3c)+"</b>, giving the sponsor <b>"+e3[0]+"</b> of that cash. There is no threshold above this one."
+        : "The <b>"+pctRaw(s.h2)+"</b> threshold was never cleared, so no cash reached Tier 3. There the incentive "
+          +"would rise to <b>"+pctRaw(s.p3,0)+"</b>, taking the sponsor to <b>"+e3[0]+"</b>."});
+
+    var lpx=R.lpMult!==null?R.lpMult.toFixed(2)+"×":"—";
+    var gpx=R.gpMult!==null?R.gpMult.toFixed(2)+"×":"—";
+    out.push({t:"Where the money ended up",
+      x:"The investor put in "+money(R.lpEquity)+" and received <b>"+money(R.lpTotal)+"</b> — <b>"+lpx+"</b> its money"
+       +(R.lpIrr!==null?", an annual return of <b>"+pct(R.lpIrr)+"</b>":"")+". The sponsor put in "+money(R.gpEquity)
+       +" and received <b>"+money(R.gpTotal)+"</b> — <b>"+gpx+"</b> its money"
+       +(R.gpIrr!==null?", an annual return of <b>"+pct(R.gpIrr)+"</b>":"")
+       +". The gap between them is what the incentive structure is designed to produce, and it only widens once the "
+       +"investor’s own targets have been met."});
+    return out;
+  }
+
+  /* ---------- the math drawer ---------- */
+  function L(k,x,res,cls){
+    return '<div class="m-line'+(cls?" "+cls:"")+'"><span class="m-k">'+k+'</span>'
+         + '<span class="m-x">'+x+'</span><span class="m-res">'+res+'</span></div>';
+  }
+  function LINES(a){ return '<div class="m-lines">'+a.join("")+'</div>'; }
+  function H(t){ return '<div class="m-head">'+t+'</div>'; }
+  function NOTE(t){ return '<p class="m-note">'+t+'</p>'; }
+  function OK(t){ return '<div class="m-check"><span aria-hidden="true">✓</span><span>'+t+'</span></div>'; }
+  var TIMES=" × ", DIV=" ÷ ", MINUS=" − ";
+
+  function schedTable(R,hl){
+    var S=R.schedule; if(!S.length) return "";
+    var col={
+      cash:footRound(S.map(function(r){return r.cash;}),R.distributed),
+      t0:footRound(S.map(function(r){return r.take[0];}),R.tierCash[0]),
+      t1:footRound(S.map(function(r){return r.take[1];}),R.tierCash[1]),
+      t2:footRound(S.map(function(r){return r.take[2];}),R.tierCash[2]),
+      lp:footRound(S.map(function(r){return r.lp;}),R.lpTotal)
+    };
+    var head=["Year","Cash distributed","To Tier 1","To Tier 2","To Tier 3","Investor receives","1st threshold balance","2nd threshold balance"];
+    var key =["","cash","t0","t1","t2","lp","b0","b1"];
+    var h=""; head.forEach(function(t,i){ h+='<th scope="col"'+(key[i]===hl?' class="hl"':"")+">"+t+"</th>"; });
+    var body="";
+    S.forEach(function(r,n){
+      body+="<tr>"
+        +'<td class="yr">'+r.year+"</td>"
+        +cell(col.cash[n],"cash",hl)+cell(col.t0[n],"t0",hl)+cell(col.t1[n],"t1",hl)+cell(col.t2[n],"t2",hl)
+        +cell(col.lp[n],"lp",hl)
+        +cell(Math.round(r.closing[0]),"b0",hl)+cell(Math.round(r.closing[1]),"b1",hl)
+        +"</tr>";
+    });
+    return '<div class="m-tbl"><table><caption>Year-by-year distribution schedule. Summable columns foot exactly to the totals quoted elsewhere.</caption>'
+         + '<thead><tr>'+h+"</tr></thead><tbody>"+body+"</tbody></table></div>";
+  }
+  function cell(v,k,hl){
+    var z=v===0;
+    return '<td class="'+(k===hl?"hl ":"")+(z?"zero":"")+'">'+(z?"—":usd0.format(v))+"</td>";
+  }
+
+  function mathFor(i){
+    var R=model.R, s=model.s, own=pair(R.gpOwn,1), out="";
+
+    if(i===0){
+      return H("Capital and ownership")
+        + LINES([
+            L("Total equity",money(R.gpEquity)+" + "+money(R.lpEquity),money(R.totalEquity),"tot"),
+            L("Sponsor ownership",money(R.gpEquity)+DIV+money(R.totalEquity),own[0]),
+            L("Investor ownership",money(R.lpEquity)+DIV+money(R.totalEquity),own[1])
+          ])
+        + OK("The two ownership percentages add to 100%, so every dollar is accounted for.");
+    }
+
+    if(i===1){
+      var t=R.timeline, N=R.years;
+      var rows=[L("Paid during the hold",money(R.totalCash)+TIMES+pctRaw(s.split,0),money(t.interimTotal))];
+      if(t.interimTotal>0){
+        rows.push(L("Spread over "+N+(N===1?" year":" years"),money(t.interimTotal)+DIV+N,money(t.per)+" a year"));
+      }
+      rows.push(L("Paid on sale, year "+N,money(R.totalCash)+MINUS+money(t.interimTotal),money(t.sale),"tot"));
+      return H("When the cash arrives")
+        + NOTE("Timing is what makes a threshold reachable or not: the same total paid earlier produces a higher "
+             + "annual return, so the model needs a schedule rather than just a total.")
+        + LINES(rows)
+        + OK(money(t.interimTotal)+" + "+money(t.sale)+" = "+money(R.totalCash)+" — the full amount you entered.");
+    }
+
+    if(i===2){
+      var c=R.tierCash[0], s1=moneySet([R.gpByTier[0],R.lpByTier[0]],c);
+      return H("How Tier 1 divides a dollar")
+        + LINES([
+            L("Sponsor incentive","none in this tier","0%"),
+            L("Sponsor share","ownership only",own[0]),
+            L("Investor share","ownership only",own[1])
+          ])
+        + H("How much cash Tier 1 absorbs")
+        + NOTE("Tier 1 keeps taking cash until the investor has actually earned <b>"+pctRaw(s.h1)
+             + "</b> a year. That point is tracked as a balance — the first threshold column below.")
+        + schedTable(R,"t0")
+        + LINES([
+            L("Total through Tier 1","sum of the Tier 1 column",money(c),"tot"),
+            L("To the sponsor",money(c)+TIMES+own[0],s1[0]),
+            L("To the investor",money(c)+TIMES+own[1],s1[1])
+          ])
+        + OK(s1[0]+" + "+s1[1]+" = "+money(c)+" — the tier pays out exactly what entered it.");
+    }
+
+    if(i===3){
+      out = H("How a threshold is measured")
+        + NOTE("A balance starts at the investor’s capital, grows <b>"+pctRaw(s.h1)+"</b> each year, and falls "
+             + "with every distribution the investor receives. The moment it hits zero, the investor has been repaid "
+             + "its money plus exactly "+pctRaw(s.h1)+" a year. That is when the next tier opens.")
+        + LINES([
+            L("Starting balance","the investor’s capital",money(R.lpEquity)),
+            L("Grows each year by","× (1 + "+pctRaw(s.h1)+")",pctRaw(s.h1)),
+            L("Falls by","every dollar the investor receives","—")
+          ])
+        + schedTable(R,"b0");
+      if(R.reached[0]!==null){
+        out += OK("The balance reaches $0 in year <b>"+R.reached[0]+"</b>. The investor’s realised annual return is "
+                + (R.lpIrr!==null?"<b>"+pct(R.lpIrr)+"</b>":"at or above the threshold")+", at or above the "
+                + pctRaw(s.h1)+" required.");
+      } else {
+        var left=R.schedule.length?R.schedule[R.schedule.length-1].closing[0]:R.lpEquity;
+        out += NOTE("The balance never reaches zero — <b>"+money(left)+"</b> is still outstanding at the end of the "
+                  + "hold, so Tier 2 never opens.");
+      }
+      return out;
+    }
+
+    if(i===4||i===5){
+      var n=(i===4)?1:2, tt=R.tiers[n], cash=R.tierCash[n];
+      var rate=(n===1)?s.p2:s.p3, eff=pair(tt.gpEff,1);
+      var sp1=footRound([R.pmByTier[n],cash-R.pmByTier[n]],cash), PM=sp1[0], REM=sp1[1];
+      var sp2=footRound([(cash-R.pmByTier[n])*R.gpOwn,(cash-R.pmByTier[n])*R.lpOwn],REM);
+      var GPP=sp2[0], LPP=sp2[1], GPT=PM+GPP, LPT=LPP;
+      var M=function(x){ return usd0.format(x); };
+
+      out = H("How Tier "+(n+1)+" divides its cash");
+      if(cash<=0) out += NOTE("No cash reached this tier, so there is nothing to divide. The percentages below are what <em>would</em> apply.");
+      out += LINES([
+            L("Cash entering the tier","from the schedule",money(cash)),
+            L("Sponsor incentive",money(cash)+TIMES+pctRaw(rate,0),M(PM)),
+            L("Left to divide",money(cash)+MINUS+M(PM),M(REM)),
+            L("Sponsor ownership share",M(REM)+TIMES+own[0],M(GPP)),
+            L("Investor ownership share",M(REM)+TIMES+own[1],M(LPP)),
+            L("Sponsor receives in total",M(PM)+" + "+M(GPP),M(GPT),"tot"),
+            L("Investor receives in total","ownership share only",M(LPT),"tot")
+          ])
+        + H("The same thing as a percentage")
+        + LINES([
+            L("Effective sponsor share",pctRaw(rate,0)+" + ("+pctRaw(100-rate,0)+TIMES+own[0]+")",eff[0]),
+            L("Effective investor share",pctRaw(100-rate,0)+TIMES+own[1],eff[1])
+          ])
+        + OK("The two effective shares add to 100%"
+            +(cash>0?", and "+M(GPT)+" + "+M(LPT)+" = "+money(cash):"")+".");
+      if(i===5){
+        out += H(R.reached[1]!==null?"Why this tier opened":"Why this tier never opened")
+          + NOTE("Tier 3 needs the second threshold of <b>"+pctRaw(s.h2)+"</b>, measured the same way as the first but "
+               + "grown at "+pctRaw(s.h2)+". "
+               + (R.reached[1]!==null?"It reaches zero in year <b>"+R.reached[1]+"</b>.":"It never reaches zero, so the tier stays shut."))
+          + schedTable(R,"b1");
+      }
+      return out;
+    }
+
+    var tot=moneySet([R.gpTotal,R.lpTotal],R.distributed);
+    var lpT=moneySet(R.lpByTier,footRound([R.gpTotal,R.lpTotal],R.distributed)[1]);
+    var gpT=moneySet(R.gpByTier,footRound([R.gpTotal,R.lpTotal],R.distributed)[0]);
+    var flows=R.lpFlows.map(function(f,y){ return (y===0?"−":"+")+money(Math.abs(f)); }).join("  →  ");
+    var npv=0; if(R.lpIrr!==null) R.lpFlows.forEach(function(f,y){ npv+=f/Math.pow(1+R.lpIrr,y); });
+
+    out = H("What each partner ended up with")
+      + LINES([
+          L("Investor received",lpT.join(" + "),tot[1],"tot"),
+          L("Investor multiple",tot[1]+DIV+money(R.lpEquity),R.lpMult!==null?R.lpMult.toFixed(2)+"×":"—"),
+          L("Sponsor received",gpT.join(" + "),tot[0],"tot"),
+          L("Sponsor multiple",tot[0]+DIV+money(R.gpEquity),R.gpMult!==null?R.gpMult.toFixed(2)+"×":"—")
+        ])
+      + OK(tot[0]+" + "+tot[1]+" = "+money(R.distributed)+" — every dollar is allocated, nothing created or lost.")
+      + H("The annual return (IRR)")
+      + NOTE("A dollar received in year 1 is worth more than a dollar in year 5, so a return cannot be a simple total "
+           + "divided by years. IRR is the one annual rate at which all the investor’s cash flows, discounted back "
+           + "to today, exactly cancel against the money put in.")
+      + LINES([
+          L("Investor cash flows",flows,""),
+          L("Investor IRR","the rate that makes those flows net to zero",R.lpIrr!==null?pct(R.lpIrr):"—","tot"),
+          L("Sponsor IRR","same calculation on the sponsor’s flows",R.gpIrr!==null?pct(R.gpIrr):"—")
+        ]);
+    if(R.lpIrr!==null){
+      out += OK("Check: discounting every investor flow at "+pct(R.lpIrr,2)+" sums to <b>"
+              + (Math.abs(npv)<0.5?"$0":money(npv))+"</b> — the rate solves.");
+    }
+    return out;
+  }
+
+  /* ---------- stage ---------- */
+  function frame(i,R){
+    var fill=R.tiers.map(function(){return 0;}), gates=R.reached.map(function(){return false;}), hot=-1;
+    if(i>=2) fill[0]=1;
+    if(i>=3) gates[0]=R.reached[0]!==null;
+    if(i>=4) fill[1]=1;
+    if(i>=5){ gates[1]=R.reached[1]!==null; fill[2]=1; }
+    if(i===2) hot=0; if(i===4) hot=1; if(i===5) hot=2;
+    var gp=0,lp=0;
+    for(var k=0;k<fill.length;k++){ gp+=R.gpByTier[k]*fill[k]; lp+=R.lpByTier[k]*fill[k]; }
+    return {fill:fill,gates:gates,hot:hot,gp:gp,lp:lp,showSrc:i>=1};
+  }
+
+  function buildRows(){
+    var sub=["Split by ownership","Sponsor incentive begins","Highest incentive"];
+    var h="";
+    TIERS.forEach(function(cfg,i){
+      h+='<div class="w-row off" id="wR'+i+'">'
+        +'<div class="w-lab"><span class="n">'+cfg.name+'</span><span class="s">'+sub[i]+'</span></div>'
+        +'<div class="w-track" role="img" aria-label=""><i class="seg-lp" style="width:0"></i>'
+        +'<i class="seg-gp" style="width:0"></i><i class="seg-pm" style="width:0"></i></div>'
+        +'<div class="w-amt zero">—</div></div>';
+      if(i<GATES.length){
+        h+='<div class="w-gate off" id="wG'+i+'"><span class="bar" aria-hidden="true"></span>'
+          +'<span class="tag" id="wG'+i+'T"></span><span class="why" id="wG'+i+'W"></span></div>';
+      }
+    });
+    $("wRows").innerHTML=h;
+  }
+
+  function paint(){
+    if(!model) return;
+    var R=model.R, s=model.s, step=model.script[idx], f=frame(idx,R);
+
+    $("wNum").textContent=idx+1;
+    $("wTitle").textContent=step.t;
+    $("wText").innerHTML=step.x;
+    var dots=$("wDots").children;
+    for(var i=0;i<dots.length;i++) dots[i].setAttribute("aria-current",i===idx?"true":"false");
+
+    $("wSrc").style.opacity=f.showSrc?"1":".32";
+    $("wSrcV").textContent=money(R.totalCash);
+
+    var total=R.totalCash>0?R.totalCash:1;
+    R.tiers.forEach(function(t,k){
+      var row=$("wR"+k); if(!row) return;
+      var cash=R.tierCash[k]*f.fill[k], share=(cash/total)*100;
+      var seg=row.querySelectorAll(".w-track i");
+      seg[0].style.width=(share*t.lpEff).toFixed(3)+"%";
+      seg[1].style.width=(share*t.gpPro).toFixed(3)+"%";
+      seg[2].style.width=(share*t.promote).toFixed(3)+"%";
+      var amt=row.querySelector(".w-amt");
+      if(f.fill[k]&&R.tierCash[k]>0){ amt.textContent=money(cash); amt.classList.remove("zero"); }
+      else { amt.textContent=f.fill[k]?"No cash":"—"; amt.classList.add("zero"); }
+      row.classList.toggle("off",!f.fill[k]);
+      row.classList.toggle("hot",f.hot===k);
+      var e=pair(t.gpEff,1);
+      row.querySelector(".w-track").setAttribute("aria-label",
+        f.fill[k]&&R.tierCash[k]>0
+          ? TIERS[k].name+": "+money(cash)+" distributed, investor "+e[1]+", sponsor "+e[0]
+          : TIERS[k].name+": no cash distributed");
+    });
+
+    R.reached.forEach(function(yr,n){
+      var box=$("wG"+n), tag=$("wG"+n+"T"), why=$("wG"+n+"W");
+      if(!box) return;
+      var seen=idx>=(n===0?3:5), lit=f.gates[n];
+      box.classList.toggle("off",!seen);
+      box.classList.toggle("lit",lit);
+      tag.textContent=(n===0?"First":"Second")+" threshold — "+pctRaw(n===0?s.h1:s.h2)+" investor return";
+      why.textContent=!seen?"":(lit?"Cleared in year "+yr+" — the next tier opens":"Not reached — the next tier never opens");
+    });
+
+    var bucket=moneySet([f.gp,f.lp],f.gp+f.lp);
+    $("wBgV").textContent=bucket[0];
+    $("wBlV").textContent=bucket[1];
+    $("wBgS").textContent=R.gpEquity>0?"on "+money(R.gpEquity)+" invested":"no capital invested";
+    $("wBlS").textContent=R.lpEquity>0?"on "+money(R.lpEquity)+" invested":"no capital invested";
+
+    $("wBack").disabled=idx===0;
+    $("wNext").disabled=idx===COUNT-1;
+    $("wPlay").textContent=playing?"Pause":(idx===COUNT-1?"Replay":"Play");
+    paintMath();
+  }
+
+  function paintMath(){
+    var box=$("wMath");
+    if(!mathOpen||!model){ box.hidden=true; return; }
+    box.hidden=false;
+    box.innerHTML=mathFor(idx);
+  }
+  function toggleMath(){
+    mathOpen=!mathOpen;
+    var b=$("wMathBtn");
+    b.setAttribute("aria-expanded",mathOpen?"true":"false");
+    b.textContent=mathOpen?"Hide the math":"Show the math";
+    paintMath();
+    announce(mathOpen?"Calculations shown for step "+(idx+1)+".":"Calculations hidden.");
+  }
+
+  /* Announcements fire only on deliberate navigation — never on recalculation,
+     so dragging a slider does not interrupt a screen reader. */
+  function announce(msg){
+    var n=$("wLive"); if(!n) return;
+    n.textContent=""; setTimeout(function(){ n.textContent=msg; },40);
+  }
+  function announceStep(){
+    if(!model) return;
+    announce("Step "+(idx+1)+" of "+COUNT+". "+model.script[idx].t+". "
+      + model.script[idx].x.replace(/<[^>]+>/g,""));
+  }
+
+  function dwell(){
+    var w=model?model.script[idx].x.replace(/<[^>]+>/g," ").split(/\s+/).length:30;
+    return Math.min(11000,Math.max(5000,2600+w*210));
+  }
+  function tick(){
+    clearTimeout(timer);
+    if(!playing) return;
+    timer=setTimeout(function(){
+      if(idx>=COUNT-1){ stop(); return; }
+      idx++; paint(); announceStep(); tick();
+    },dwell());
+  }
+  function play(){ if(idx>=COUNT-1) idx=0; playing=true; paint(); announceStep(); tick(); }
+  function stop(){ playing=false; clearTimeout(timer); paint(); }
+  function go(n){ stop(); idx=Math.min(COUNT-1,Math.max(0,n)); paint(); announceStep(); }
+
+  function init(){
+    buildRows();
+    var d="";
+    for(var i=0;i<COUNT;i++) d+='<button type="button" data-i="'+i+'" aria-current="false" aria-label="Step '+(i+1)+'"></button>';
+    $("wDots").innerHTML=d;
+    $("wDots").addEventListener("click",function(e){
+      var b=e.target.closest("button"); if(b) go(parseInt(b.getAttribute("data-i"),10));
+    });
+    $("wBack").addEventListener("click",function(){ go(idx-1); });
+    $("wNext").addEventListener("click",function(){ go(idx+1); });
+    $("wMathBtn").addEventListener("click",toggleMath);
+    $("wPlay").addEventListener("click",function(){
+      if(playing) stop();
+      else if(reduced()) go(idx>=COUNT-1?0:idx+1);
+      else play();
+    });
+    if(reduced()) $("wPlay").textContent="Next step";
+  }
+
+  function update(Rn,sn){ model={R:Rn,s:sn,script:script(Rn,sn)}; paint(); }
+  function restart(){ stop(); idx=0; paint(); }
+
+  return { init:init, update:update, restart:restart };
+})();
+
+/* ============================================================
+   7 · EXPORT
+   ============================================================ */
+function csvEscape(v){ return '"'+String(v).replace(/"/g,'""')+'"'; }
+function downloadCsv(){
+  if(!R) return;
+  var rows=[["Year","Cash distributed","To Tier 1","To Tier 2","To Tier 3",
+             "Sponsor receives","Investor receives","1st threshold balance","2nd threshold balance"]];
+  R.schedule.forEach(function(r){
+    rows.push([r.year,r.cash.toFixed(2),r.take[0].toFixed(2),r.take[1].toFixed(2),r.take[2].toFixed(2),
+               r.gp.toFixed(2),r.lp.toFixed(2),r.closing[0].toFixed(2),r.closing[1].toFixed(2)]);
+  });
+  rows.push([]);
+  rows.push(["Sponsor equity",R.gpEquity]); rows.push(["Investor equity",R.lpEquity]);
+  rows.push(["First threshold",state.h1+"%"]); rows.push(["Second threshold",state.h2+"%"]);
+  rows.push(["Tier 2 incentive",state.p2+"%"]); rows.push(["Tier 3 incentive",state.p3+"%"]);
+  rows.push(["Total distributable cash",R.totalCash]); rows.push(["Holding period",R.years]);
+  rows.push(["Paid during the hold",state.split+"%"]);
+  rows.push(["Sponsor proceeds",R.gpTotal.toFixed(2)]); rows.push(["Investor proceeds",R.lpTotal.toFixed(2)]);
+  rows.push(["Sponsor IRR",R.gpIrr!==null?(R.gpIrr*100).toFixed(4)+"%":""]);
+  rows.push(["Investor IRR",R.lpIrr!==null?(R.lpIrr*100).toFixed(4)+"%":""]);
+
+  var csv=rows.map(function(r){ return r.map(csvEscape).join(","); }).join("\r\n");
+  var blob=new Blob(["﻿"+csv],{type:"text/csv;charset=utf-8;"});
+  var a=document.createElement("a");
+  a.href=URL.createObjectURL(blob);
+  a.download="waterfall-schedule.csv";
+  document.body.appendChild(a); a.click();
+  setTimeout(function(){ URL.revokeObjectURL(a.href); a.remove(); },1000);
+  say("Schedule downloaded as CSV.");
+}
+function copyLink(){
+  writeUrl();
+  var url=location.href;
+  function done(){ say("Link copied. It reopens this exact scenario."); }
+  if(navigator.clipboard && navigator.clipboard.writeText){
+    navigator.clipboard.writeText(url).then(done,fallback);
+  } else fallback();
+  function fallback(){
+    var t=document.createElement("textarea");
+    t.value=url; t.setAttribute("readonly",""); t.style.position="fixed"; t.style.opacity="0";
+    document.body.appendChild(t); t.select();
+    try{ document.execCommand("copy"); done(); }catch(e){ say("Copy the address bar to share this scenario."); }
+    t.remove();
+  }
+}
+
+/* ============================================================
+   8 · MOBILE SHEET
+   ============================================================ */
+var Sheet=(function(){
+  var open=false, lastFocus=null;
+  function isMobile(){ return window.matchMedia("(max-width:1080px)").matches; }
+  function set(v){
+    open=v;
+    $("rail").classList.toggle("open",v);
+    $("backdrop").classList.toggle("on",v);
+    $("sheetOpen").setAttribute("aria-expanded",v?"true":"false");
+    document.body.style.overflow=v?"hidden":"";
+    if(v){ lastFocus=document.activeElement; setTimeout(function(){ $("sheetClose").focus(); },60); }
+    else if(lastFocus){ lastFocus.focus(); lastFocus=null; }
+  }
+  function init(){
+    $("sheetOpen").addEventListener("click",function(){ set(!open); });
+    $("sheetClose").addEventListener("click",function(){ set(false); });
+    $("backdrop").addEventListener("click",function(){ set(false); });
+    document.addEventListener("keydown",function(e){ if(e.key==="Escape"&&open) set(false); });
+    window.addEventListener("resize",function(){ if(!isMobile()&&open) set(false); });
+  }
+  return { init:init };
+})();
+
+/* ============================================================
+   9 · WIRING
+   ============================================================ */
+function formatMoneyField(input){
+  var digits=input.value.replace(/[^0-9]/g,"");
+  var caret=input.selectionStart==null?input.value.length:input.selectionStart;
+  var before=input.value.slice(0,caret).replace(/[^0-9]/g,"").length;
+  var out=digits?Number(digits).toLocaleString("en-US"):"";
+  input.value=out;
+  var pos=0,seen=0;
+  while(pos<out.length&&seen<before){ if(/\d/.test(out.charAt(pos))) seen++; pos++; }
+  try{ input.setSelectionRange(pos,pos); }catch(e){}
+}
+
+function wire(){
+  KEYS.forEach(function(k){
+    var s=SPEC[k];
+    el[k].addEventListener("input",function(){
+      if(s.money) formatMoneyField(el[k]);
+      if(slider[k]){
+        var v=rawValue(k);
+        if(isFinite(v)) slider[k].value = s.money ? posOf(v,k) : v;
+      }
+      requestRender();
+    });
+    el[k].addEventListener("change",requestRender);
+    if(slider[k]){
+      slider[k].addEventListener("input",function(){
+        var raw=parseFloat(slider[k].value);
+        var v=s.money?valOf(raw,k):raw;
+        if(s.money && v<s.min) v=s.min;
+        el[k].value=s.money?Number(v).toLocaleString("en-US"):String(v);
+        requestRender();
+      });
+    }
+  });
+
+  $("reset").addEventListener("click",function(){
+    KEYS.forEach(function(k){ state[k]=BASE[k]; flag(k,""); });
+    softFlag("p3Warn","");
+    pushToControls();
+    Walk.restart();
+    render();
+    say("Assumptions reset to the base case. Walkthrough returned to step 1.");
+  });
+
+  $("btnCsv").addEventListener("click",downloadCsv);
+  $("btnLink").addEventListener("click",copyLink);
+  $("btnPrint").addEventListener("click",function(){
+    var t=$("discTable"); if(t) t.open=true;
+    setTimeout(function(){ window.print(); },80);
+  });
+}
+
+/* ============================================================
+   10 · SELF-CHECK
+   ============================================================ */
+function selfCheck(){
+  var probes=[
+    {gpEquity:2e6,lpEquity:18e6,promotes:[0,.20,.30],hurdles:[.08,.14],totalCash:34e6,years:5,holdShare:.12},
+    {gpEquity:5e6,lpEquity:5e6,promotes:[0,.30,.50],hurdles:[.10,.18],totalCash:9e6,years:3,holdShare:0},
+    {gpEquity:0,lpEquity:10e6,promotes:[0,.25,.40],hurdles:[.06,.12],totalCash:40e6,years:7,holdShare:1},
+    {gpEquity:1e6,lpEquity:9e6,promotes:[0,0,0],hurdles:[.05,.10],totalCash:25e6,years:5,holdShare:.3},
+    {gpEquity:2e6,lpEquity:8e6,promotes:[0,.2,.3],hurdles:[.10,.10],totalCash:30e6,years:5,holdShare:.2}
+  ];
+  var fail=[];
+  probes.forEach(function(A,n){
+    var r=Engine.run(A);
+    r.tiers.forEach(function(t,i){
+      if(Math.abs(t.gpEff+t.lpEff-1)>1e-9) fail.push("probe "+n+" tier "+i+": shares != 100%");
+    });
+    if(Math.abs(r.gpOwn+r.lpOwn-1)>1e-9 && r.totalEquity>0) fail.push("probe "+n+": ownership != 100%");
+    if(Math.abs(r.distributed-A.totalCash)>1e-3) fail.push("probe "+n+": distributed != total cash");
+    r.tierCash.forEach(function(c,i){
+      if(Math.abs(r.gpByTier[i]+r.lpByTier[i]-c)>1e-3) fail.push("probe "+n+" tier "+i+": dollars unbalanced");
+    });
+    var sched=r.schedule.reduce(function(a,x){return a+x.cash;},0);
+    if(Math.abs(sched-A.totalCash)>1e-3) fail.push("probe "+n+": schedule != total cash");
+    if(r.tierCash[1]>1e-6 && r.reached[0]===null) fail.push("probe "+n+": tier 2 filled before gate 1 cleared");
+    if(r.tierCash[2]>1e-6 && r.reached[1]===null) fail.push("probe "+n+": tier 3 filled before gate 2 cleared");
+    if(r.reached[0]!==null && r.lpIrr!==null && r.lpIrr<A.hurdles[0]-1e-4) fail.push("probe "+n+": IRR below cleared gate 1");
+  });
+  if(fail.length) console.error("Waterfall self-check FAILED:\n"+fail.join("\n"));
+  else console.info("Waterfall self-check passed ("+probes.length+" scenarios).");
+}
+
+/* ============================================================
+   11 · BOOT
+   ============================================================ */
+var required=KEYS.concat(["cmp","heat","heatMetric","heatHint","heatAxis","heatLo","heatHi","heatRamp",
+  "tiers","tblBody","tl","tlAxis","seq","reset","live","wLive",
+  "wNum","wDots","wTitle","wText","wBack","wPlay","wNext","wMath","wMathBtn","wSrc","wSrcV","wRows",
+  "wBgV","wBlV","rGp","rLp","heroChips","heroGates","capGp","sheetSum","sheetOpen","sheetClose","backdrop"]);
+var missing=required.filter(function(id){ return !document.getElementById(id); });
+if(missing.length){
+  console.error("Equity Distribution Waterfall: missing element(s) — "+missing.join(", "));
+} else {
+  readUrl();
+  pushToControls();
+  wire();
+  Walk.init();
+  Sheet.init();
+  Heat.init();
+  render();
+  Heat.build();
+  selfCheck();
+}
+
+})();
+</script>
+</body>
+</html>
