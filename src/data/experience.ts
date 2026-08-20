@@ -17,10 +17,10 @@ export const experience: ExperienceItem[] = [
     current: true,
     type: 'professional',
     bullets: [
-      'Prepared a rent-by-room comparable analysis for 7800 Burleson Road to support proposed market rents, rental positioning, and underwriting assumptions.',
-      'Developed a refinancing pitch deck for 2801 South I-35 Frontage Road, presenting market research, property positioning, and investment highlights.',
-      'Built a side-by-side capital stack analysis for the $73.8 million 7800 Burleson Road project, comparing two financing scenarios across loan-to-cost, blended cash-on-cash return, and equity structure to give investors a clear basis for evaluating the optimal financing structure.',
-      'Participated as an observer in an institutional lender credit-screening call with JPMorgan for the $73.8 million mixed-income multifamily development, gaining exposure to how lenders evaluate submarket vacancy, new supply, concessions, effective rents, and the distinction between 60% AMI-restricted and market-rate units.',
+      'Developed a refinancing pitch deck for 2801 South I-35 Frontage Road to support the property’s refinancing opportunity by presenting market research, property positioning, and investment highlights.',
+      'Built an interactive JV distribution waterfall that sizes LP and GP returns across a three-tier promote structure, computing IRR, equity multiple, and effective share of cash under any combination of equity split, hurdle, and promote.',
+      'Built an interactive capital stack model for 7800 Burleson Road, a 316-unit development, comparing a debt fund structure against a conventional bank plus mezzanine capital structure across loan-to-cost, blended cost of capital, and cash-on-cash to give investors a defensible basis for selecting a financing path.',
+      'Observed institutional credit screening on a $73.8 million mixed-income multifamily development, including how JPMorgan’s team tested submarket vacancy, oversupply, concession-adjusted effective rents, and 60% AMI vs. market-rate rent assumptions.',
     ],
   },
   {

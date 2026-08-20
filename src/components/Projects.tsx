@@ -6,8 +6,10 @@ import { projects } from '@/data/projects';
 export default function Projects() {
   const ref = useRef<HTMLElement>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
+  const cardRefs = useRef<(HTMLDivElement | null)[]>([]);
   const [inView, setInView] = useState(false);
   const [expandedIndex, setExpandedIndex] = useState<number | null>(null);
+  const [activeIndex, setActiveIndex] = useState(0);
 
   useEffect(() => {
     const el = ref.current;
@@ -20,10 +22,33 @@ export default function Projects() {
     return () => observer.disconnect();
   }, []);
 
+  useEffect(() => {
+    const el = scrollRef.current;
+    if (!el) return;
+    const onScroll = () => {
+      const containerLeft = el.getBoundingClientRect().left;
+      let closest = 0;
+      let closestDist = Infinity;
+      cardRefs.current.forEach((card, i) => {
+        if (!card) return;
+        const dist = Math.abs(card.getBoundingClientRect().left - containerLeft);
+        if (dist < closestDist) { closestDist = dist; closest = i; }
+      });
+      setActiveIndex(closest);
+    };
+    el.addEventListener('scroll', onScroll, { passive: true });
+    onScroll();
+    return () => el.removeEventListener('scroll', onScroll);
+  }, []);
+
   const scrollByPage = (direction: 1 | -1) => {
     const el = scrollRef.current;
     if (!el) return;
     el.scrollBy({ left: direction * el.clientWidth * 0.9, behavior: 'smooth' });
+  };
+
+  const goToCard = (index: number) => {
+    cardRefs.current[index]?.scrollIntoView({ behavior: 'smooth', inline: 'start', block: 'nearest' });
   };
 
   return (
@@ -53,7 +78,7 @@ export default function Projects() {
           <button
             onClick={() => scrollByPage(-1)}
             aria-label="Scroll projects left"
-            className="hidden md:flex absolute -left-14 top-1/2 -translate-x-1/2 -translate-y-1/2 z-10 w-11 h-11 rounded-full bg-white border border-light-gray items-center justify-center text-charcoal shadow-sm hover:text-burnt-orange hover:border-burnt-orange transition-colors focus-visible:outline-burnt-orange"
+            className="hidden min-[1440px]:flex absolute -left-14 top-1/2 -translate-x-1/2 -translate-y-1/2 z-10 w-11 h-11 rounded-full bg-white border border-light-gray items-center justify-center text-charcoal shadow-sm hover:text-burnt-orange hover:border-burnt-orange transition-colors focus-visible:outline-burnt-orange"
           >
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
@@ -62,19 +87,20 @@ export default function Projects() {
           <button
             onClick={() => scrollByPage(1)}
             aria-label="Scroll projects right"
-            className="hidden md:flex absolute -right-14 top-1/2 translate-x-1/2 -translate-y-1/2 z-10 w-11 h-11 rounded-full bg-white border border-light-gray items-center justify-center text-charcoal shadow-sm hover:text-burnt-orange hover:border-burnt-orange transition-colors focus-visible:outline-burnt-orange"
+            className="hidden min-[1440px]:flex absolute -right-14 top-1/2 translate-x-1/2 -translate-y-1/2 z-10 w-11 h-11 rounded-full bg-white border border-light-gray items-center justify-center text-charcoal shadow-sm hover:text-burnt-orange hover:border-burnt-orange transition-colors focus-visible:outline-burnt-orange"
           >
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
             </svg>
           </button>
 
-          <div ref={scrollRef} className="projects-scroll flex gap-6 overflow-x-auto snap-x snap-mandatory pb-2">
+          <div ref={scrollRef} className="projects-scroll flex gap-6 overflow-x-auto snap-x snap-mandatory pb-4">
             {projects.map((project, index) => {
               const isExpanded = expandedIndex === index;
               return (
                 <div
                   key={project.title}
+                  ref={(el) => { cardRefs.current[index] = el; }}
                   className="card snap-start flex-shrink-0 w-[85vw] sm:w-[420px]"
                 >
                   {/* Card header */}
@@ -170,6 +196,22 @@ export default function Projects() {
                 </div>
               );
             })}
+          </div>
+
+          {/* Position dots — mobile only; desktop has the arrow buttons */}
+          <div className="flex md:hidden justify-center gap-2 mt-5" role="tablist" aria-label="Select project">
+            {projects.map((project, index) => (
+              <button
+                key={project.title}
+                onClick={() => goToCard(index)}
+                role="tab"
+                aria-selected={index === activeIndex}
+                aria-label={`Go to ${project.title}`}
+                className={`h-2 rounded-full transition-all ${
+                  index === activeIndex ? 'bg-burnt-orange w-6' : 'bg-light-gray w-2'
+                }`}
+              />
+            ))}
           </div>
         </div>
       </div>

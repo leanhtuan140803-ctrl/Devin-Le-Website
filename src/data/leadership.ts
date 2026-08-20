@@ -4,9 +4,8 @@ export const leadership = [
     role: 'Member',
     period: 'Fall 2025 – Present',
     bullets: [
-      'Engage with industry professionals and peers through networking events, panel discussions, and guest-speaker sessions focused on commercial and residential real estate.',
-      'Participate in programming that provides direct exposure to real estate markets, deal structures, and industry trends.',
-      'Join organized industry treks to major U.S. cities to visit real estate firms and gain firsthand exposure to company culture, deal flow, and career paths.',
+      'Engage with industry professionals and peers through networking events, panels, and guest-speaker sessions focused on commercial and residential real estate.',
+      'Participate in organized industry treks to major U.S. cities, touring top-tier real estate firms and gaining firsthand exposure to company culture, deal flow, and career opportunities.',
     ],
   },
 ];

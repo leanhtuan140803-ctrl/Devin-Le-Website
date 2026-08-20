@@ -1,4 +1,4 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 40">
-  <rect width="24" height="40" rx="5" fill="white" stroke="#E9E9E9" stroke-width="1"/>
-  <text x="12" y="20" font-family="Georgia, serif" font-size="15" font-weight="bold" fill="black" text-anchor="middle" dominant-baseline="central">DL</text>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" width="32" height="32">
+  <title>DL monogram</title>
+  <path fill="#111111" stroke="#111111" stroke-width="0.6" stroke-linejoin="round" d="M12.67 15.97Q12.67 10.76 11.48 8.33Q10.30 5.89 7.64 5.89H6.82V25.97Q7.88 26.11 8.75 26.11Q10.20 26.11 11.04 25.10Q11.89 24.10 12.28 21.95Q12.67 19.80 12.67 15.97ZM8.50 3.91Q12.52 3.91 14.44 6.85Q16.36 9.79 16.36 15.83Q16.36 22.03 14.53 25.06Q12.69 28.09 8.97 28.09L3.96 28.01H1.40V26.70L3.32 26.22V5.69L1.40 5.23V3.91ZM24.46 5.23 22.15 5.69V26.11H25.20Q27.57 26.11 28.68 25.75L29.60 20.74H30.60L30.18 28.01H16.73V26.70L18.64 26.22V5.69L16.74 5.23V3.91H24.46Z"/>
 </svg>

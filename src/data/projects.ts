@@ -37,7 +37,7 @@ export const projects: Project[] = [
     course: 'Investment Management',
     date: 'Spring 2026',
     description:
-      'Design and active management of a simulated hedge fund portfolio with an alpha-generating strategy, benchmarked against the S&P 500. No real client capital was involved.',
+      'Design and active management of a simulated hedge fund portfolio with an alpha-generating strategy, benchmarked against the S&P 500.',
     bullets: [
       'Designed and actively managed a simulated hedge fund portfolio with an investment strategy intended to generate alpha.',
       'Maintained portfolio tracking error within the 5%–20% range relative to the S&P 500 throughout the holding period.',

@@ -91,12 +91,36 @@ body {
   background-color: #fff7f2;
 }
 
-/* Projects horizontal scroller — navigated via buttons, scrollbar hidden */
+/* Projects horizontal scroller — arrow buttons only fit when the viewport is wide
+   enough to have margin outside the content container (see min-[1440px]:flex on the
+   buttons in Projects.tsx). Below that, show a visible scrollbar as the affordance. */
 .projects-scroll {
   scrollbar-width: none;
 }
 .projects-scroll::-webkit-scrollbar {
   display: none;
+}
+
+@media (max-width: 1439px) {
+  .projects-scroll {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(191, 87, 0, 0.35) #F0EBE3;
+  }
+  .projects-scroll::-webkit-scrollbar {
+    display: block;
+    height: 8px;
+  }
+  .projects-scroll::-webkit-scrollbar-track {
+    background: #F0EBE3;
+    border-radius: 4px;
+  }
+  .projects-scroll::-webkit-scrollbar-thumb {
+    background-color: rgba(191, 87, 0, 0.35);
+    border-radius: 4px;
+  }
+  .projects-scroll::-webkit-scrollbar-thumb:hover {
+    background-color: rgba(191, 87, 0, 0.55);
+  }
 }
 
 /* Card base */

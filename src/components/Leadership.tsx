@@ -22,7 +22,7 @@ export default function Leadership() {
     <section
       id="leadership"
       ref={ref}
-      className="py-24 bg-white"
+      className="pt-24 pb-12 bg-white"
       aria-labelledby="leadership-heading"
     >
       <div className="max-w-7xl mx-auto px-6 lg:px-8">
