@@ -13,14 +13,14 @@ export const experience: ExperienceItem[] = [
     company: 'Bercy Chen Studio LP',
     position: 'Development Intern',
     location: 'Austin, Texas',
-    period: 'May 2026 – Present',
-    current: true,
+    period: 'May 2026 – August 2026',
+    current: false,
     type: 'professional',
     bullets: [
-      'Developed a refinancing pitch deck for 2801 South I-35 Frontage Road to support the property’s refinancing opportunity by presenting market research, property positioning, and investment highlights.',
       'Built an interactive JV distribution waterfall that sizes LP and GP returns across a three-tier promote structure, computing IRR, equity multiple, and effective share of cash under any combination of equity split, hurdle, and promote.',
       'Built an interactive capital stack model for 7800 Burleson Road, a 316-unit development, comparing a debt fund structure against a conventional bank plus mezzanine capital structure across loan-to-cost, blended cost of capital, and cash-on-cash to give investors a defensible basis for selecting a financing path.',
-      'Observed institutional credit screening on a $73.8 million mixed-income multifamily development, including how JPMorgan’s team tested submarket vacancy, oversupply, concession-adjusted effective rents, and 60% AMI vs. market-rate rent assumptions.',
+      'Observed institutional credit screening on 7800 Burleson Road, a $73.8 million mixed-income multifamily development, including how JPMorgan’s team tested submarket vacancy, oversupply, concession-adjusted effective rents, and 60% AMI vs. market-rate rent assumptions.',
+      'Built a refinancing pitch deck for ArtHub ATX to support the property’s refinancing opportunity by presenting market research, property positioning, and investment highlights.',
     ],
   },
   {

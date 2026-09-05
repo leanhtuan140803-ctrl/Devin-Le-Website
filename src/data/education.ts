@@ -9,7 +9,7 @@ export const education = {
     'Econometrics',
     'Accounting',
     'Microeconomics',
-    'Real Estate Investment',
+    'Urban Economics',
   ],
   honors: [
     {
