@@ -17,7 +17,7 @@ export const profile = {
     { label: 'Overall GPA', value: '3.82' },
     { label: 'Expected Graduation', value: 'Dec 2026' },
     { label: 'Minors', value: 'Finance & Real Estate' },
-    { label: 'Certification', value: 'Argus Enterprise' },
+    { label: 'Certifications', value: 'SIE & Argus Enterprise' },
   ],
   contact: {
     email: 'leanhtuan140803@gmail.com',

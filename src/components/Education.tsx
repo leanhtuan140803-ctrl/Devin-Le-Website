@@ -1,7 +1,9 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
+import Image from 'next/image';
 import { education } from '@/data/education';
+import { certifications } from '@/data/leadership';
 
 export default function Education() {
   const ref = useRef<HTMLElement>(null);
@@ -124,20 +126,45 @@ export default function Education() {
                 </li>
               ))}
             </ul>
+          </div>
 
-            {/* Certification callout */}
-            <div className="mt-6 p-4 bg-charcoal rounded-lg">
-              <div className="flex items-center gap-3">
-                <div className="w-8 h-8 bg-burnt-orange rounded flex items-center justify-center flex-shrink-0">
-                  <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z" />
-                  </svg>
+          {/* Certifications panel */}
+          <div
+            className={`card p-8 lg:col-span-2 animate-on-scroll ${inView ? 'in-view' : ''}`}
+            style={{ transitionDelay: '300ms' }}
+          >
+            <h3 className="font-serif text-xl font-bold text-charcoal mb-6">Certifications</h3>
+            <div className="grid sm:grid-cols-2 gap-4">
+              {certifications.map((cert) => (
+                <div
+                  key={cert.name}
+                  className="flex items-center justify-between gap-4 p-4 bg-charcoal rounded-lg"
+                >
+                  <div className="flex items-center gap-3 min-w-0">
+                    <div className="w-14 h-10 bg-white rounded flex items-center justify-center flex-shrink-0 p-1.5">
+                      <Image
+                        src={cert.logoUrl}
+                        alt={`${cert.issuer} logo`}
+                        width={80}
+                        height={40}
+                        className="w-full h-full object-contain"
+                      />
+                    </div>
+                    <div className="min-w-0">
+                      <div className="text-xs text-white/50 uppercase tracking-wider mb-0.5">{cert.issuer}</div>
+                      <div className="text-white font-medium text-sm truncate">{cert.name}</div>
+                    </div>
+                  </div>
+                  <a
+                    href={cert.credentialUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex-shrink-0 px-3 py-1.5 bg-white/10 hover:bg-white/20 text-white text-xs font-semibold rounded-full transition-colors whitespace-nowrap"
+                  >
+                    View credential
+                  </a>
                 </div>
-                <div>
-                  <div className="text-xs text-white/50 uppercase tracking-wider mb-0.5">Certification</div>
-                  <div className="text-white font-medium text-sm">Argus Enterprise Certification</div>
-                </div>
-              </div>
+              ))}
             </div>
           </div>
         </div>

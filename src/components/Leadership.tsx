@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
-import { leadership, honors, certifications } from '@/data/leadership';
+import { leadership, honors } from '@/data/leadership';
 
 export default function Leadership() {
   const ref = useRef<HTMLElement>(null);
@@ -74,9 +74,8 @@ export default function Leadership() {
             ))}
           </div>
 
-          {/* Honors & Certifications */}
+          {/* Honors */}
           <div className="space-y-6">
-            {/* Honors */}
             <div
               className={`card p-6 animate-on-scroll ${inView ? 'in-view' : ''}`}
               style={{ transitionDelay: '200ms' }}
@@ -94,24 +93,6 @@ export default function Leadership() {
                     <div className="text-xs text-medium-gray mt-0.5">{honor.institution}</div>
                     <div className="text-xs text-charcoal-light mt-1">{honor.detail}</div>
                   </div>
-                </div>
-              ))}
-            </div>
-
-            {/* Certifications */}
-            <div
-              className={`card p-6 animate-on-scroll ${inView ? 'in-view' : ''}`}
-              style={{ transitionDelay: '300ms' }}
-            >
-              <h3 className="font-serif text-lg font-bold text-charcoal mb-4">Certifications</h3>
-              {certifications.map((cert) => (
-                <div key={cert.name} className="flex items-center gap-3">
-                  <div className="w-8 h-8 bg-charcoal rounded-lg flex items-center justify-center flex-shrink-0">
-                    <svg className="w-4 h-4 text-burnt-orange" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z" />
-                    </svg>
-                  </div>
-                  <span className="font-medium text-charcoal text-sm">{cert.name}</span>
                 </div>
               ))}
             </div>

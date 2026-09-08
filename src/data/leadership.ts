@@ -20,6 +20,15 @@ export const honors = [
 
 export const certifications = [
   {
+    name: 'Securities Industry Essentials (SIE)',
+    issuer: 'FINRA',
+    logoUrl: '/images/logos/finra.png',
+    credentialUrl: '/documents/sie-exam-result.jpg',
+  },
+  {
     name: 'Argus Enterprise Certification',
+    issuer: 'Argus Software',
+    logoUrl: '/images/logos/argus.png',
+    credentialUrl: '/documents/argus-enterprise-certificate.jpg',
   },
 ];
