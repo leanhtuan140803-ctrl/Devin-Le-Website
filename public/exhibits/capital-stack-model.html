@@ -4,276 +4,316 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Capital Stack Model — Construction Financing Alternatives</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=Source+Serif+4:opsz,wght@8..60,600;8..60,700&display=swap" rel="stylesheet">
 <style>
+/* ============================================================
+   TOKENS — extracted verbatim from equity-distribution-waterfall.html
+   so the two exhibits read as one design system. Where this page's
+   own conventions diverged, the waterfall page's tokens win.
+   ============================================================ */
 :root{
-  --navy:#0f2c47; --navy-2:#17405f; --slate:#33495c; --ink:#12212e; --ink-2:#32485c;
-  --muted:#4a5e6e; --muted-2:#5f7280;
-  --line:#dde4ea; --line-2:#edf1f5; --bg:#fff; --page-bg:#f3f6f8; --panel:#f7f9fb; --calc:#eef3f7;
-  --stack-1:#0f2c47; --stack-2:#2e6390; --stack-3:#4a7799; --stack-4:#7ea6c4;
-  --stack-5:#a9c7dd; --stack-6:#d3e3ef;
-  /* interpolated steps on the same ramp — nine possible bands do not fit a six-step scale */
-  --stack-2b:#3c6d94; --stack-3b:#6e98b7; --stack-4b:#93b6d0;
-  --green:#276b4d; --green-bg:#f0f7f3; --amber:#8a6414; --amber-bg:#fdf8ec;
-  --red:#9b3535; --red-bg:#fdf3f3;
-  --sans:'IBM Plex Sans',-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;
-  --serif:'Source Serif 4',Georgia,'Times New Roman',serif;
-  --mono:ui-monospace,"SF Mono","JetBrains Mono",Menlo,Consolas,monospace;
-  --shadow:0 6px 24px rgba(15,44,71,.13);
+  --navy:#122540; --navy-700:#1b3559; --navy-500:#2c4d78;
+  --lp:#a3c4e2; --lp-deep:#3a6491; --lp-wash:#eaf1f8;
+  --gold:#96702c; --gold-deep:#6f5623; --gold-wash:#f6f0e2;
+  --ink:#1b212a; --ink-2:#535d6b; --ink-3:#636c77;
+  --line:#e3e7ed; --line-2:#ecf0f4; --ctl:#7e8c9f;
+  --paper:#fff; --page-bg:#faf9f6; --panel:#f4f2ee; --calc:#eef1f5;
+  --warm:#faf9f6; --warm-2:#f4f2ee;
+  /* capital-stack segment ramp: navy (senior, most senior/lowest cost) through
+     lp-blue (LP equity, most junior/highest target return) — the same two
+     endpoints the waterfall page uses for sponsor vs. investor. Nine bands
+     do not fit a six-step scale, so three interpolated half-steps fill the gaps. */
+  --stack-1:#122540; --stack-2:#2f4560; --stack-2b:#3e5571; --stack-3:#4c6581;
+  --stack-3b:#5b7591; --stack-4:#6984a1; --stack-4b:#7894b1; --stack-5:#86a4c2;
+  --stack-6:#a3c4e2;
+  --green:#2c6b4f; --green-bg:#eaf4ef; --amber:#7a4e17; --amber-bg:#f8f0e2;
+  --red:#95271c; --red-bg:#faeeec;
+  --serif:"Iowan Old Style","Palatino Linotype",Palatino,"Book Antiqua",Georgia,serif;
+  --sans:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+  --mono:ui-monospace,"SF Mono",Menlo,Consolas,monospace;
+  --r:8px;
+  --shadow:0 6px 24px rgba(18,37,64,.14);
 }
 *{box-sizing:border-box}
 html,body{margin:0;padding:0}
-body{background:var(--page-bg);color:var(--ink);font-family:var(--sans);font-size:13px;line-height:1.45;-webkit-font-smoothing:antialiased}
-h1,h2,h3,h4{margin:0;font-weight:600}
+/* body is a column flex so the workspace (in Edit Mode, now the only thing
+   below the toolbar) can grow to fill the viewport instead of leaving blank
+   space under a short form — flex:1 with the default min-height:auto still
+   lets it grow taller than the viewport and scroll normally when content
+   genuinely needs more room. */
+body{background:var(--page-bg);color:var(--ink);font-family:var(--sans);font-size:13px;line-height:1.45;-webkit-font-smoothing:antialiased;font-variant-numeric:tabular-nums lining-nums;display:flex;flex-direction:column;min-height:100vh}
+h1,h2,h3,h4{margin:0;font-weight:600;font-family:var(--serif);color:var(--navy);letter-spacing:-.01em}
 table{border-collapse:collapse;width:100%}
 button{font-family:inherit;font-size:inherit;color:inherit;cursor:pointer}
 input,select{font-family:inherit}
 .num,.mono{font-family:var(--mono);font-variant-numeric:tabular-nums;letter-spacing:-.01em}
-.eyebrow{font-size:9px;letter-spacing:.17em;text-transform:uppercase;color:var(--muted);font-weight:700}
-.dim{color:var(--muted)}
-.shell{max-width:1560px;margin:0 auto;padding:0 26px 64px}
+.eyebrow{font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--ink-3);font-weight:700}
+.sr-only{position:absolute!important;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
+.dim{color:var(--ink-3)}
+.shell{max-width:1560px;width:100%;margin:0 auto;padding:0 26px 64px;flex:1 1 auto;display:flex;flex-direction:column;min-height:0}
 
-/* ============ MASTHEAD ============ */
-.masthead{display:flex;justify-content:space-between;align-items:flex-start;gap:28px;padding:20px 0 14px;border-bottom:2px solid var(--navy)}
-.masthead h1{font-family:var(--serif);font-weight:700;font-size:24px;line-height:1.1;letter-spacing:-.015em;color:var(--navy);margin:5px 0 3px}
-.mast-sub{font-size:11.5px;color:var(--ink-2)}
-.mast-metrics{display:flex;gap:0;flex:0 0 auto;align-items:stretch}
-.mast-m{padding:0 20px;border-left:1px solid var(--line);text-align:right}
-.mast-m:first-child{border-left:0}
-.mast-m .k{font-size:8.5px;letter-spacing:.15em;text-transform:uppercase;color:var(--muted);font-weight:700}
-.mast-m .v{font-family:var(--serif);font-size:24px;font-weight:700;color:var(--navy);letter-spacing:-.02em;line-height:1.2;font-variant-numeric:tabular-nums}
-.mast-m.sm .v{font-size:15px;line-height:1.6}
+/* ============ MASTHEAD (topbar — matches waterfall's .topbar verbatim) ============ */
+.masthead{flex:none;background:var(--navy);color:#fff;border-bottom:3px solid var(--gold);padding:20px 26px 18px}
+.masthead-in{max-width:1560px;margin:0 auto;display:flex;flex-wrap:wrap;gap:10px 28px;align-items:flex-end;justify-content:space-between}
+.masthead h1{font-family:var(--serif);font-weight:600;font-size:clamp(21px,2.4vw,28px);line-height:1.15;letter-spacing:-.01em;color:#fff;margin:4px 0 0}
+.mast-sub{font-size:13px;color:#c9d6e6;margin-top:6px;max-width:64ch}
+.mast-metrics{display:flex;flex-wrap:wrap;gap:1px;background:rgba(255,255,255,.14);border-radius:6px;overflow:hidden;margin-top:12px}
+.mast-m{padding:8px 15px;background:var(--navy);text-align:left;min-width:112px}
+.mast-m .k{font-size:9.5px;letter-spacing:.09em;text-transform:uppercase;color:#8ba3c4;font-weight:700}
+.mast-m .v{font-family:var(--serif);font-size:19px;font-weight:600;color:#fff;letter-spacing:-.01em;line-height:1.3;font-variant-numeric:tabular-nums}
+.mast-m.sm .v{font-size:15px}
 
-/* ============ TOOLBAR ============ */
-.toolbar{display:flex;align-items:center;flex-wrap:nowrap;gap:8px;width:100%;min-width:0;padding:9px 0;border-bottom:1px solid var(--line);position:sticky;top:0;background:rgba(255,255,255,.97);box-shadow:0 2px 8px rgba(15,44,71,.04);z-index:40}
-.toolbar .btn,.toolbar .status-pill,.mode-switch .btn{height:38px;display:inline-flex;align-items:center;justify-content:center}
-.btn{background:#fff;border:1px solid var(--line);padding:5px 11px;font-size:11px;font-weight:600;color:var(--ink-2);border-radius:3px;white-space:nowrap;letter-spacing:.01em}
-.btn:hover{border-color:var(--slate);color:var(--navy);background:var(--panel)}
-.btn:focus-visible,input:focus-visible,select:focus-visible,a:focus-visible{outline:2px solid var(--stack-2);outline-offset:1px}
+/* ============ TOOLBAR — light text-style action row, not a button bar ============ */
+.toolbar{flex:none;display:flex;align-items:center;flex-wrap:nowrap;gap:14px;width:100%;min-width:0;padding:9px 0;border-bottom:1px solid var(--line);position:sticky;top:0;background:rgba(250,249,246,.96);-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px);z-index:40}
+.toolbar .btn,.toolbar .status-pill,.mode-switch .btn{height:34px;display:inline-flex;align-items:center;justify-content:center}
+.btn{background:none;border:1px solid transparent;padding:5px 10px;font-size:11.5px;font-weight:600;letter-spacing:.02em;color:var(--ink-2);border-radius:5px;white-space:nowrap}
+.btn:hover{border-color:var(--ctl);color:var(--navy);background:var(--panel)}
+.btn:focus-visible,input:focus-visible,select:focus-visible,a:focus-visible{outline:2px solid var(--gold);outline-offset:1px}
 .btn.primary{background:var(--navy);border-color:var(--navy);color:#fff}
-.btn.primary:hover{background:var(--navy-2);color:#fff}
-.btn.on{background:var(--navy);border-color:var(--navy);color:#fff}
-.btn.icon{padding:5px 9px;font-size:14px;line-height:1}
+.btn.primary:hover{background:var(--navy-700);color:#fff}
+.btn.on{background:none;color:var(--navy);font-weight:700;border-color:transparent}
+.btn.icon{padding:5px 8px;font-size:13px;line-height:1}
 .btn[disabled]{opacity:.35;cursor:default}
-.mode-switch{display:inline-flex;align-items:stretch;flex:0 0 auto;margin-left:10px;border:1px solid var(--line);border-radius:3px;overflow:hidden;white-space:nowrap}
-.mode-switch .btn{margin:0;border:0;border-radius:0}
-.mode-switch .btn+.btn{border-left:1px solid var(--line)}
-.toolbar-actions{display:flex;align-items:center;justify-content:flex-end;flex-wrap:nowrap;gap:6px;margin-left:auto;margin-right:10px;min-width:0;max-width:calc(100% - 240px)}
-.save-ind{font-size:10.5px;color:var(--muted);max-width:130px;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-align:right;flex:0 1 auto}
+.mode-switch{display:inline-flex;align-items:stretch;flex:0 0 auto;gap:2px}
+.mode-switch .btn{margin:0;border-radius:5px}
+.mode-switch .btn.on{text-decoration:underline;text-decoration-color:var(--gold);text-decoration-thickness:2px;text-underline-offset:5px}
+.toolbar-div{width:1px;align-self:center;height:18px;background:var(--line);flex:0 0 auto}
+.toolbar-actions{display:flex;align-items:center;justify-content:flex-end;flex-wrap:nowrap;gap:2px;margin-left:auto;margin-right:0;min-width:0;max-width:calc(100% - 220px)}
+.save-ind{font-size:10.5px;color:var(--ink-3);max-width:130px;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-align:right;flex:0 1 auto}
 .save-ind.on{color:var(--green)}
 .lbl-short{display:none}
 
 /* menu */
 .menu{position:relative;flex:0 0 auto}
-.menu-pop{position:absolute;top:calc(100% + 5px);right:0;background:#fff;border:1px solid var(--line);box-shadow:var(--shadow);z-index:60;min-width:196px;border-radius:3px;padding:4px 0}
+.menu-pop{position:absolute;top:calc(100% + 5px);right:0;background:#fff;border:1px solid var(--line);box-shadow:var(--shadow);z-index:60;min-width:196px;border-radius:6px;padding:4px 0}
 .menu-pop button{display:block;width:100%;text-align:left;background:none;border:0;padding:6px 13px;font-size:11.5px;color:var(--ink-2)}
 .menu-pop button:hover{background:var(--panel);color:var(--navy)}
 .menu-pop .sep{height:1px;background:var(--line-2);margin:4px 0}
-.menu-pop .hd{font-size:8.5px;letter-spacing:.13em;text-transform:uppercase;color:var(--muted-2);font-weight:700;padding:6px 13px 3px}
+.menu-pop .hd{font-size:9px;letter-spacing:.11em;text-transform:uppercase;color:var(--ink-3);font-weight:700;padding:6px 13px 3px}
 .menu-pop button .ck{color:var(--green);font-weight:700}
 
 /* ============ STATUS ============ */
-.statuswrap{position:relative;flex:0 1 auto;min-width:0}
-.status-pill{display:flex;align-items:center;gap:7px;border:1px solid var(--line);border-radius:3px;padding:4px 10px;background:#fff;font-size:11px;flex:0 1 auto;max-width:262px;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+/* hidden from the toolbar per request — validate()/confirmations() still compute normally,
+   this just stops surfacing them as a pill; renderStatus() keeps writing into it harmlessly */
+.statuswrap{display:none}
+.status-pill{display:flex;align-items:center;gap:7px;border:1px solid var(--line);border-radius:20px;padding:4px 11px;background:#fff;font-size:11px;flex:0 1 auto;max-width:262px;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .status-pill .s{display:flex;align-items:center;gap:4px;font-weight:600;overflow:hidden;text-overflow:ellipsis}
 .s.ok{color:var(--green)} .s.warn{color:var(--amber)} .s.err{color:var(--red)}
-.s.conf{color:var(--muted);font-weight:600;flex:0 1 auto}
-.status-panel{position:absolute;top:calc(100% + 6px);right:0;width:520px;max-width:88vw;background:#fff;border:1px solid var(--line);box-shadow:var(--shadow);z-index:60;border-radius:3px;max-height:440px;overflow:auto}
-.status-panel h4{font-size:9px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);padding:9px 13px 5px;border-bottom:1px solid var(--line-2)}
+.s.conf{color:var(--ink-3);font-weight:600;flex:0 1 auto}
+.status-panel{position:absolute;top:calc(100% + 6px);right:0;width:520px;max-width:88vw;background:#fff;border:1px solid var(--line);box-shadow:var(--shadow);z-index:60;border-radius:6px;max-height:440px;overflow:auto}
+.status-panel h4{font-size:9.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--ink-3);padding:9px 13px 5px;border-bottom:1px solid var(--line-2);font-family:var(--sans);font-weight:700}
 .flagrow{display:flex;gap:9px;padding:7px 13px;font-size:11.5px;border-bottom:1px solid var(--line-2);line-height:1.45}
 .flagrow .fl{flex:0 0 auto;font-weight:700;font-size:9.5px;letter-spacing:.06em;text-transform:uppercase;padding-top:1px}
 .flagrow.e{background:var(--red-bg)} .flagrow.e .fl{color:var(--red)}
 .flagrow.w{background:var(--amber-bg)} .flagrow.w .fl{color:var(--amber)}
-.flagrow.i .fl{color:var(--muted)}
+.flagrow.i .fl{color:var(--ink-3)}
 .flagrow.ok .fl{color:var(--green)}
 
 /* ============ WORKSPACE ============ */
-.workspace{display:grid;grid-template-columns:196px minmax(0,1fr) 268px;gap:0;margin-top:18px;background:#fff;border:1px solid var(--line);border-radius:3px;box-shadow:0 2px 8px rgba(15,44,71,.05);overflow:hidden}
+.workspace{display:grid;grid-template-columns:196px minmax(0,1fr) 268px;gap:0;margin-top:18px;background:#fff;border:1px solid var(--line);border-radius:var(--r);box-shadow:0 2px 8px rgba(18,37,64,.05);overflow:hidden;flex:1 1 auto}
 .nav{background:var(--panel);border-right:1px solid var(--line);padding:10px 0}
-.nav-grp{font-size:8.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted-2);font-weight:700;padding:11px 14px 5px}
+.nav-grp{font-size:9px;letter-spacing:.12em;text-transform:uppercase;color:var(--ink-3);font-weight:700;padding:11px 14px 5px}
 .nav a,.nav button{display:flex;justify-content:space-between;align-items:center;gap:6px;width:100%;padding:7px 14px;font-size:12px;font-family:inherit;color:var(--ink-2);text-align:left;background:none;border:0;border-left:2px solid transparent;text-decoration:none;cursor:pointer}
 .nav a:hover,.nav button:hover{background:#fff;color:var(--navy)}
-.nav a.on,.nav button.on{background:#fff;color:var(--navy);font-weight:600;border-left-color:var(--navy)}
-.nav a .badge,.nav button .badge{font-family:var(--sans);font-variant-numeric:tabular-nums;font-size:9.5px;color:var(--muted-2)}
-.nav a.on .badge,.nav button.on .badge{color:var(--stack-2)}
+.nav a.on,.nav button.on{background:#fff;color:var(--navy);font-weight:600;border-left-color:var(--gold)}
+.nav a .badge,.nav button .badge{font-family:var(--sans);font-variant-numeric:tabular-nums;font-size:9.5px;color:var(--ink-3)}
+.nav a.on .badge,.nav button.on .badge{color:var(--gold-deep)}
 .editor{padding:20px 24px;min-width:0}
 .summary{background:var(--panel);border-left:1px solid var(--line);padding:16px 15px}
 .summary-inner{position:sticky;top:60px}
 .sum-row{display:flex;justify-content:space-between;gap:8px;padding:5px 0;border-bottom:1px solid var(--line-2);font-size:11.5px}
-.sum-row .k{color:var(--muted)}
-.sum-row .v{font-family:var(--serif);font-weight:700;color:var(--navy);font-variant-numeric:tabular-nums}
-.sum-row.hd{border-bottom:1px solid var(--slate);padding-bottom:6px;margin-bottom:2px}
-.sum-row.hd .k{font-size:9px;letter-spacing:.14em;text-transform:uppercase;color:var(--navy);font-weight:700}
+.sum-row .k{color:var(--ink-3)}
+.sum-row .v{font-family:var(--serif);font-weight:600;color:var(--navy);font-variant-numeric:tabular-nums}
+.sum-row.hd{border-bottom:1px solid var(--ctl);padding-bottom:6px;margin-bottom:2px}
+.sum-row.hd .k{font-size:9.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--navy);font-weight:700}
 .sum-row.big{padding:8px 0}
 .sum-row.big .v{font-size:15px}
 .sum-row .v.ok{color:var(--green)} .sum-row .v.bad{color:var(--red)}
 
 /* ============ EDITOR CONTENT ============ */
 .ed-head{display:flex;justify-content:space-between;align-items:flex-start;gap:16px;margin-bottom:4px}
-.ed-head h2{font-size:16px;color:var(--navy);letter-spacing:-.01em}
-.ed-head p{margin:3px 0 0;font-size:11.5px;color:var(--muted);max-width:560px}
+.ed-head h2{font-size:17px;color:var(--navy);letter-spacing:-.005em}
+.ed-head p{margin:3px 0 0;font-size:11.5px;color:var(--ink-3);max-width:560px;font-family:var(--sans)}
 .block{margin-top:22px}
-.block > h3{font-size:9px;letter-spacing:.15em;text-transform:uppercase;color:var(--navy);font-weight:700;padding-bottom:5px;border-bottom:1px solid var(--line);margin-bottom:12px;display:flex;justify-content:space-between;align-items:baseline}
-.fgrid{display:grid;gap:13px 18px;grid-template-columns:repeat(3,minmax(0,1fr))}
+.block > h3{font-size:9.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--ink-2);font-family:var(--sans);font-weight:700;padding-bottom:5px;border-bottom:1px solid var(--line);margin-bottom:12px;display:flex;justify-content:space-between;align-items:baseline}
+.fgrid{display:grid;gap:15px 18px;grid-template-columns:repeat(3,minmax(0,1fr))}
 .fgrid.c2{grid-template-columns:repeat(2,minmax(0,1fr))}
 .fgrid.c4{grid-template-columns:repeat(4,minmax(0,1fr))}
 .f{display:flex;flex-direction:column;gap:4px;min-width:0}
-.f > label{font-size:10px;font-weight:600;color:var(--ink-2);display:flex;align-items:center;gap:4px;letter-spacing:.01em}
-.f .help{font-size:10px;color:var(--muted-2);font-family:var(--mono)}
-.ip{display:flex;align-items:stretch;border:1px solid var(--line);border-radius:3px;background:#fff;transition:border-color .12s,box-shadow .12s}
-.ip:focus-within{border-color:var(--stack-2);box-shadow:0 0 0 3px rgba(46,99,144,.11)}
-.ip input,.ip select{border:0;outline:0;background:transparent;padding:6px 8px;width:100%;min-width:0;font-family:var(--sans);font-size:13px;font-variant-numeric:tabular-nums;text-align:right;color:var(--ink)}
-.ip.text input,.ip select{font-family:var(--sans);text-align:left;font-size:12.5px}
+.f > label{font-size:12px;font-weight:600;color:var(--ink-2);display:flex;align-items:baseline;justify-content:space-between;gap:6px;line-height:1.3}
+.f > label .lab{flex:1 1 auto;min-width:0}
+.f > label .tech{display:block;font-size:10.5px;font-weight:500;color:var(--ink-3);margin-top:1px}
+.f .help,.f .hint{font-size:10.5px;color:var(--ink-3);font-family:var(--sans)}
+.ip{display:flex;align-items:stretch;height:34px;border:1px solid var(--ctl);border-radius:6px;background:#fff;overflow:hidden;transition:border-color .12s,box-shadow .12s}
+.ip:focus-within{border-color:var(--navy);box-shadow:0 0 0 3px rgba(44,77,120,.2)}
+.ip input,.ip select{border:0;outline:0;background:transparent;padding:0 9px;width:100%;min-width:0;font-family:var(--sans);font-size:13px;font-weight:600;font-variant-numeric:tabular-nums;text-align:right;color:var(--ink)}
+.ip.text input,.ip select{font-family:var(--sans);text-align:left;font-size:12.5px;font-weight:500}
 .ip select{cursor:pointer;padding-right:4px}
-.ip .af{font-size:11px;color:var(--muted);background:var(--line-2);padding:6px 8px;display:flex;align-items:center;font-weight:600;flex:0 0 auto}
+.ip .af{font-size:11.5px;color:var(--ink-2);background:var(--panel);padding:0 9px;display:flex;align-items:center;font-weight:600;flex:0 0 auto}
 .ip .af.pre{border-right:1px solid var(--line)}
 .ip .af.suf{border-left:1px solid var(--line)}
-.ip .af.clr{background:var(--line-2);border-top:0;border-right:0;border-bottom:0;font-size:13px;line-height:1;color:var(--muted);padding:6px 9px}
-.ip .af.clr:hover{color:var(--navy);background:#e4ebf1}
-.ip output{display:block;width:100%;min-width:0;padding:6px 8px;font-family:var(--sans);font-size:13px;font-variant-numeric:tabular-nums;text-align:right;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;cursor:default}
+.ip .af.clr{background:var(--panel);border-top:0;border-right:0;border-bottom:0;font-size:13px;line-height:1;color:var(--ink-3);padding:0 10px}
+.ip .af.clr:hover{color:var(--navy);background:var(--line-2)}
+.ip output{display:block;width:100%;min-width:0;padding:0 9px;font-family:var(--sans);font-size:13px;font-weight:600;font-variant-numeric:tabular-nums;text-align:right;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;cursor:default}
 .ip output:empty::after{content:"\00a0"}
-.ip.calc{background:var(--calc);border-style:solid;border-color:var(--line)}
-.ip.calc input,.ip.calc output{color:var(--slate);cursor:default}
-.ip.calc .af{background:#e4ebf1}
+.ip.calc{background:var(--calc)}
+.ip.calc input,.ip.calc output{color:var(--ink-2);cursor:default}
+.ip.calc .af{background:var(--line-2)}
 .ip.err{border-color:var(--red)} .ip.err .af{background:var(--red-bg);color:var(--red)}
-.f.calc-f > label::after{content:"CALCULATED";font-size:8px;letter-spacing:.1em;color:var(--muted-2);font-weight:700;margin-left:auto}
-input[type=range]{width:100%;accent-color:var(--navy);margin:1px 0 0;height:14px}
-.radio{display:flex;border:1px solid var(--line);border-radius:3px;overflow:hidden}
-.radio label{flex:1;text-align:center;font-size:10.5px;padding:6px 4px;font-weight:600;color:var(--muted);background:#fff;border-right:1px solid var(--line);cursor:pointer}
+.f.calc-f > label .lab::after{content:"Calculated";font-size:9.5px;font-weight:600;letter-spacing:0;text-transform:none;color:var(--ink-3);margin-left:6px}
+input[type=range]{width:100%;accent-color:var(--navy);margin:2px 0 0;height:14px}
+.radio{display:flex;border:1px solid var(--ctl);border-radius:6px;overflow:hidden}
+.radio label{flex:1;text-align:center;font-size:11px;padding:7px 4px;font-weight:600;color:var(--ink-2);background:#fff;border-right:1px solid var(--line);cursor:pointer}
 .radio label:last-child{border-right:0}
 .radio label:has(input:checked){background:var(--navy);color:#fff}
-.radio label:has(input:focus-visible){outline:2px solid var(--stack-2);outline-offset:-2px}
+.radio label:has(input:focus-visible){outline:2px solid var(--gold);outline-offset:-2px}
 .radio input{position:absolute;opacity:0;pointer-events:none}
-.chk{display:flex;align-items:center;gap:7px;font-size:11.5px;color:var(--ink-2);cursor:pointer;padding:6px 0}
+.f > label.chk{display:flex;justify-content:flex-start;align-items:center;gap:7px;font-size:12px;font-weight:500;color:var(--ink-2);cursor:pointer;padding:6px 0}
 .chk input{accent-color:var(--navy);width:14px;height:14px;flex:0 0 auto}
 
-details.adv{margin-top:20px;border:1px solid var(--line);border-radius:3px;background:var(--panel)}
-details.adv > summary{padding:9px 13px;font-size:10px;letter-spacing:.13em;text-transform:uppercase;font-weight:700;color:var(--slate);cursor:pointer;list-style:none;display:flex;align-items:center;gap:7px}
+details.adv{margin-top:20px;border:1px solid var(--line);border-radius:var(--r);background:var(--panel)}
+details.adv > summary{padding:10px 14px;font-size:10px;letter-spacing:.11em;text-transform:uppercase;font-family:var(--sans);font-weight:700;color:var(--ink-2);cursor:pointer;list-style:none;display:flex;align-items:center;gap:7px}
 details.adv > summary::-webkit-details-marker{display:none}
-details.adv > summary::before{content:"+";font-family:var(--mono);font-size:13px;color:var(--muted)}
-details.adv[open] > summary::before{content:"−"}
+details.adv > summary::before{content:"";width:0;height:0;border-left:6px solid var(--ink-2);border-top:4.5px solid transparent;border-bottom:4.5px solid transparent;transition:transform .15s;flex:none}
+details.adv[open] > summary::before{transform:rotate(90deg)}
 details.adv[open] > summary{border-bottom:1px solid var(--line)}
 details.adv .adv-body{padding:15px 13px;background:#fff}
 
 /* empty states */
-.empty{border:1px dashed var(--line);border-radius:3px;padding:16px;text-align:center;background:var(--panel)}
-.empty p{margin:0 0 10px;font-size:11.5px;color:var(--muted)}
-.empty .lbl{font-size:12.5px;color:var(--slate);font-weight:600;margin-bottom:2px}
+.empty{border:1px dashed var(--ctl);border-radius:var(--r);padding:16px;text-align:center;background:var(--panel)}
+.empty p{margin:0 0 10px;font-size:11.5px;color:var(--ink-3)}
+.empty .lbl{font-size:12.5px;color:var(--ink-2);font-weight:600;margin-bottom:2px;font-family:var(--serif)}
 
 /* editable row lists */
-.rows{border:1px solid var(--line);border-radius:3px;overflow:hidden}
+.rows{border:1px solid var(--line);border-radius:var(--r);overflow:hidden}
 .rowh,.rowr,.rowf{display:grid;grid-template-columns:minmax(0,1fr) 150px 130px 92px 30px;align-items:center}
 .rows.simple .rowh,.rows.simple .rowr,.rows.simple .rowf{grid-template-columns:minmax(0,1fr) 130px 92px 30px}
 .rows.osrc .rowh,.rows.osrc .rowr,.rows.osrc .rowf{grid-template-columns:minmax(0,1fr) 158px 116px 96px 76px 30px}
 .rowh{background:var(--panel);border-bottom:1px solid var(--line)}
-.rowh div{font-size:8.5px;letter-spacing:.11em;text-transform:uppercase;color:var(--muted);font-weight:700;padding:7px 9px}
+.rowh div{font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3);font-weight:700;padding:7px 9px}
 .rowr{border-bottom:1px solid var(--line-2)}
 .rowr:hover{background:var(--panel)}
 .rowr input,.rowr select{border:0;background:transparent;width:100%;padding:7px 9px;font-size:12px;outline:0;min-width:0}
 .rowr input.amt{font-family:var(--sans);text-align:right;font-variant-numeric:tabular-nums}
-.rowr:focus-within{background:#f2f7fb}
-.rowf{background:var(--panel);border-top:1px solid var(--slate)}
-.rowf div{padding:7px 9px;font-size:12px;font-weight:700;color:var(--navy);font-family:var(--serif);font-variant-numeric:tabular-nums;text-align:right}
+.rowr:focus-within{background:var(--lp-wash)}
+.rowf{background:var(--panel);border-top:1px solid var(--ctl)}
+.rowf div{padding:7px 9px;font-size:12px;font-weight:600;color:var(--navy);font-family:var(--serif);font-variant-numeric:tabular-nums;text-align:right}
 .rowf div:first-child{font-family:var(--sans);text-align:left}
-.pctcell{padding:7px 9px;font-family:var(--sans);font-variant-numeric:tabular-nums;font-size:11.5px;text-align:right;color:var(--muted)}
-.yn{font-size:10px;letter-spacing:.06em;text-transform:uppercase;font-weight:700;background:none;border:1px solid transparent;padding:3px 8px;border-radius:3px;margin:0 6px}
-.yn.y{color:var(--green);background:var(--green-bg);border-color:#cfe4d9}
-.yn.n{color:var(--muted);background:var(--line-2);border-color:var(--line)}
-.del{background:none;border:0;color:var(--muted-2);font-size:15px;line-height:1;padding:4px}
+.pctcell{padding:7px 9px;font-family:var(--sans);font-variant-numeric:tabular-nums;font-size:11.5px;text-align:right;color:var(--ink-3)}
+.yn{font-size:10px;letter-spacing:.06em;text-transform:uppercase;font-weight:700;background:none;border:1px solid transparent;padding:3px 8px;border-radius:20px;margin:0 6px}
+.yn.y{color:var(--green);background:var(--green-bg);border-color:#bfe0cc}
+.yn.n{color:var(--ink-3);background:var(--line-2);border-color:var(--line)}
+.del{background:none;border:0;color:var(--ink-3);font-size:15px;line-height:1;padding:4px}
 .del:hover{color:var(--red)}
 
 /* ============ ANALYSIS CANVAS ============ */
-.analysis-canvas{background:#fff;border:1px solid var(--line);border-radius:3px;box-shadow:0 2px 8px rgba(15,44,71,.05);margin-top:18px;padding:26px 28px}
+.analysis-canvas{flex:none;background:#fff;border:1px solid var(--line);border-radius:var(--r);box-shadow:0 2px 8px rgba(18,37,64,.05);margin-top:18px;padding:26px 28px}
 .analysis-canvas .section:first-child,.analysis-canvas > #presentOpen + .section{margin-top:0}
 .section{margin-top:38px}
-.capital-stack-analysis-section{background:#f2f6f9;border:1px solid #dce5ec;border-radius:6px;padding:24px 26px 28px}
+.capital-stack-analysis-section{background:var(--warm-2,#f4f2ee);border:1px solid var(--line);border-radius:var(--r);padding:24px 26px 28px}
 .capital-stack-analysis-section .scard{background:#fff}
-.sec-head{display:flex;justify-content:space-between;align-items:baseline;gap:16px;border-bottom:1px solid var(--navy);padding-bottom:6px;margin-bottom:14px}
-.sec-head h2{font-family:var(--serif);font-size:19px;font-weight:700;text-transform:none;letter-spacing:-.005em;color:var(--navy)}
-.sec-head .hint{font-size:10.5px;color:var(--muted)}
+.sec-head{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:baseline;gap:4px 18px;margin-bottom:14px}
+.sec-head h2{font-family:var(--serif);font-size:clamp(17px,1.8vw,20px);font-weight:600;text-transform:none;letter-spacing:-.005em;color:var(--navy)}
+.sec-head .hint{font-size:11.5px;color:var(--ink-3)}
 
-.cmp{font-size:12px}
-.cmp th{font-size:9px;letter-spacing:.11em;text-transform:uppercase;color:var(--muted);font-weight:700;text-align:right;padding:7px 12px;border-bottom:1px solid var(--line)}
+.cmp{font-size:13px}
+.cmp th{font-size:10px;letter-spacing:.07em;text-transform:uppercase;color:var(--ink-2);font-weight:700;text-align:right;padding:8px 13px;border-bottom:1.5px solid var(--ctl)}
 .cmp th:first-child{text-align:left}
-.cmp td{padding:7px 12px;text-align:right;font-family:var(--sans);font-variant-numeric:tabular-nums;border-bottom:1px solid var(--line-2);white-space:nowrap}
-.cmp td:first-child{text-align:left;font-family:var(--sans);color:var(--ink-2)}
+.cmp td{padding:8px 13px;text-align:right;font-family:var(--sans);font-variant-numeric:tabular-nums;border-bottom:1px solid var(--line);white-space:nowrap}
+.cmp td:first-child{text-align:left;font-family:var(--sans);font-weight:600;color:var(--ink-2)}
+.cmp tbody tr:last-child td{border-bottom:0}
 .cmp tr:hover td{background:var(--panel)}
-.cmp td.best{background:var(--green-bg);color:var(--green);font-weight:700;font-family:var(--serif)}
-.cmp td.bad{color:var(--red);font-weight:700;font-family:var(--serif)}
-.cmp tr.grp td{background:var(--panel);font-family:var(--sans);font-size:8.5px;letter-spacing:.13em;text-transform:uppercase;font-weight:700;color:var(--navy)}
-.footnote{font-size:10px;color:var(--muted);margin-top:7px;line-height:1.5}
+.cmp td.best{color:var(--green);font-weight:700}
+.cmp td.bad{color:var(--red);font-weight:700}
+.cmp tr.grp td{background:var(--warm);font-family:var(--sans);font-size:10px;letter-spacing:.08em;text-transform:uppercase;font-weight:700;color:var(--ink-2);padding:6px 13px}
+.footnote{font-size:10.5px;color:var(--ink-3);margin-top:7px;line-height:1.5}
 /* horizontal overflow is contained inside the table, not pushed onto the page */
 .tscroll{overflow-x:auto;max-width:100%}
 .tscroll .cmp th:first-child,.tscroll .cmp td:first-child{position:sticky;left:0;z-index:2;background:#fff;border-right:1px solid var(--line-2)}
 .tscroll .cmp tr:hover td:first-child{background:var(--panel)}
-.tscroll .cmp tr.grp td{position:static;background:var(--panel);border-right:0}
+.tscroll .cmp tr.grp td{position:static;background:var(--warm);border-right:0}
 
-.scengrid{display:grid;gap:26px;margin-top:6px}
+.scengrid{display:grid;gap:22px;margin-top:6px}
 .scencol{min-width:0}
-.scard{border:1px solid var(--line);border-top:3px solid var(--navy);border-radius:3px;padding:13px 15px;background:#fff;box-shadow:0 2px 8px rgba(15,44,71,.05)}
+.scard{border:1px solid var(--line);border-top:3px solid var(--navy);border-radius:var(--r);padding:14px 16px;background:#fff}
 .scard-top{display:flex;justify-content:space-between;align-items:flex-start;gap:10px}
-.scard-top h3{font-family:var(--serif);font-weight:700;font-size:15px;color:var(--navy);letter-spacing:-.01em}
-.scard-top .tag{font-size:9px;letter-spacing:.13em;text-transform:uppercase;color:var(--muted);font-weight:700;margin-top:2px}
-.scard-body{display:grid;grid-template-columns:1fr 1fr;gap:10px 16px;margin-top:12px}
-.sc-item .k{font-size:8.5px;letter-spacing:.11em;text-transform:uppercase;color:var(--muted);font-weight:700}
-.sc-item .v{font-family:var(--serif);font-size:14px;font-weight:700;color:var(--navy);margin-top:1px;font-variant-numeric:tabular-nums}
-.sc-item .s{font-size:10px;color:var(--muted-2)}
+.scard-top h3{font-family:var(--serif);font-weight:600;font-size:16px;color:var(--navy);letter-spacing:-.005em}
+.scard-top .tag{font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3);font-weight:700;margin-top:2px}
+.scard-body{display:grid;grid-template-columns:1fr 1fr;gap:12px 16px;margin-top:13px}
+.sc-item .k{font-size:9.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-3);font-weight:700}
+.sc-item .v{font-family:var(--serif);font-size:15px;font-weight:600;color:var(--navy);margin-top:2px;font-variant-numeric:tabular-nums}
+.sc-item .s{font-size:10.5px;color:var(--ink-3)}
 .scard-actions{display:flex;gap:6px;align-items:center}
 
-.metrics{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(92px,100%),1fr));gap:1px;background:var(--line);border:1px solid var(--line);border-radius:3px;overflow:hidden;margin-top:14px}
-.metric{padding:8px 10px;min-width:0;background:#fff}
-.metric .k{font-size:8.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);font-weight:700;display:flex;align-items:center;gap:4px}
-.metric .v{font-family:var(--serif);font-size:20px;font-weight:700;color:var(--navy);margin-top:2px;letter-spacing:-.01em;font-variant-numeric:tabular-nums}
-.metric .s{font-size:9.5px;color:var(--muted-2);margin-top:1px}
+.metrics{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(92px,100%),1fr));gap:1px;background:var(--line);border:1px solid var(--line);border-radius:var(--r);overflow:hidden;margin-top:14px}
+.metric{padding:9px 11px;min-width:0;background:#fff}
+.metric .k{font-size:9.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-3);font-weight:700;display:flex;align-items:center;gap:4px}
+.metric .v{font-family:var(--serif);font-size:20px;font-weight:600;color:var(--navy);margin-top:3px;letter-spacing:-.01em;font-variant-numeric:tabular-nums}
+.metric .s{font-size:10px;color:var(--ink-3);margin-top:1px}
 .metric.alert{background:var(--red-bg)} .metric.alert .v{color:var(--red)}
 .metric.good .v{color:var(--green)}
 
-/* capital stack */
-.stackwrap{display:grid;grid-template-columns:40px minmax(0,1fr) 14px 186px;height:452px;position:relative;margin-top:16px}
+/* capital stack — the hero graphic of this exhibit, treated the way the waterfall
+   treats its cascade: the largest, quietest, most carefully labeled thing on the page */
+/* the bar column keeps minmax(0,1fr) rather than a hard pixel width so it still
+   compresses gracefully in a tight 3-column layout instead of overflowing;
+   max-width just stops it from stretching wide on generously sized columns */
+.stackwrap{display:grid;grid-template-columns:40px minmax(0,1fr) 14px 230px;height:580px;max-width:920px;margin:18px auto 0;position:relative}
 .axis{position:relative}
-.axis .t{position:absolute;right:7px;transform:translateY(50%);font-family:var(--sans);font-variant-numeric:tabular-nums;font-size:9.5px;color:var(--muted-2)}
+.axis .t{position:absolute;right:7px;transform:translateY(50%);font-family:var(--sans);font-variant-numeric:tabular-nums;font-size:10px;color:var(--ink-3)}
 .bar{position:relative;border-left:1px solid var(--line);border-bottom:1px solid var(--line)}
 .gridline{position:absolute;left:0;right:0;border-top:1px dotted var(--line);pointer-events:none}
 .seg{position:absolute;left:0;right:0;overflow:hidden;display:flex;flex-direction:column;justify-content:center;align-items:center;padding:2px 10px;text-align:center;border-top:1px solid rgba(255,255,255,.5);cursor:default;transition:height .3s cubic-bezier(.4,0,.2,1),bottom .3s cubic-bezier(.4,0,.2,1)}
 .seg:hover{filter:brightness(1.08)}
-.seg .l1{font-size:11px;font-weight:600;letter-spacing:.02em}
-.seg .l2{font-family:var(--serif);font-size:15px;font-weight:700;margin-top:2px;letter-spacing:-.01em;font-variant-numeric:tabular-nums}
-.seg .l3{font-family:var(--sans);font-size:10px;margin-top:1px;font-variant-numeric:tabular-nums}
-.seg.gapseg{background:repeating-linear-gradient(45deg,#fff,#fff 5px,#f7eaea 5px,#f7eaea 10px);border:1px dashed var(--red);color:var(--red)}
+.seg .l1{font-size:11.5px;font-weight:600;letter-spacing:.01em}
+.seg .l2{font-family:var(--serif);font-size:16px;font-weight:600;margin-top:2px;letter-spacing:-.01em;font-variant-numeric:tabular-nums}
+.seg .l3{font-family:var(--sans);font-size:10.5px;margin-top:1px;font-variant-numeric:tabular-nums}
+.seg.gapseg{background:repeating-linear-gradient(45deg,#fff,#fff 5px,#faeeec 5px,#faeeec 10px);border:1px dashed var(--red);color:var(--red)}
 .notes{position:relative;overflow:hidden}
-.note{position:absolute;left:0;width:186px;font-size:10px;line-height:1.4;transition:top .3s cubic-bezier(.4,0,.2,1)}
-.note .nr{font-family:var(--sans);font-variant-numeric:tabular-nums;font-size:9.5px;color:var(--muted-2)}
-.note .nt{font-weight:700;font-size:10.5px;color:var(--navy)}
-.note .nv{font-family:var(--serif);font-size:11px;color:var(--slate);font-weight:700;font-variant-numeric:tabular-nums}
-.note .nd{color:var(--muted);font-size:9.5px}
-.note .swatch{display:inline-block;width:8px;height:8px;margin-right:4px;vertical-align:middle}
-.riskrail{position:absolute;left:-24px;top:0;bottom:0;width:20px;display:flex;flex-direction:column;justify-content:space-between;align-items:center;font-size:8px;letter-spacing:.1em;color:var(--muted-2)}
+.note{position:absolute;left:0;width:230px;font-size:13px;line-height:1.45;transition:top .3s cubic-bezier(.4,0,.2,1)}
+.note .nr{font-family:var(--sans);font-variant-numeric:tabular-nums;font-size:11.5px;color:var(--ink-3)}
+.note .nt{font-weight:600;font-size:14px;color:var(--navy)}
+.note .nv{font-family:var(--serif);font-size:15px;color:var(--ink-2);font-weight:600;font-variant-numeric:tabular-nums}
+.note .nd{color:var(--ink-3);font-size:11.5px}
+.note .swatch{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:5px;vertical-align:middle}
+.riskrail{position:absolute;left:-24px;top:0;bottom:0;width:20px;display:flex;flex-direction:column;justify-content:space-between;align-items:center;font-size:8.5px;letter-spacing:.09em;color:var(--ink-3)}
 .riskrail div{writing-mode:vertical-rl;transform:rotate(180deg);text-transform:uppercase}
 
-/* tables */
-.tbl{font-size:11.5px;margin-top:8px}
-.tbl caption{caption-side:top;text-align:left;font-size:9px;letter-spacing:.14em;text-transform:uppercase;color:var(--navy);font-weight:700;padding:0 0 6px;border-bottom:1px solid var(--navy)}
-.tbl th{font-size:8.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);font-weight:700;text-align:right;padding:6px 9px;border-bottom:1px solid var(--line);white-space:nowrap}
+/* tables — hairline rules only, right-aligned tabular figures, letterspaced small-caps head */
+.tbl{font-size:12.5px;margin-top:8px}
+.tbl caption{caption-side:top;text-align:left;font-size:11.5px;font-style:italic;color:var(--ink-3);font-weight:400;letter-spacing:0;text-transform:none;font-family:var(--sans);padding:0 0 8px;border-bottom:0;line-height:1.5}
+.tbl th{font-size:10px;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-2);font-weight:700;text-align:right;padding:7px 9px;border-bottom:1.5px solid var(--ctl);white-space:nowrap}
 .tbl th:first-child{text-align:left}
-.tbl td{padding:5px 9px;border-bottom:1px solid var(--line-2);text-align:right;font-family:var(--sans);font-variant-numeric:tabular-nums;white-space:nowrap}
+.tbl td{padding:6px 9px;border-bottom:1px solid var(--line);text-align:right;font-family:var(--sans);font-variant-numeric:tabular-nums;white-space:nowrap}
 .tbl td:first-child{text-align:left;font-family:var(--sans);white-space:normal}
-.tbl tr.total td{border-top:1px solid var(--navy);border-bottom:0;font-weight:700;color:var(--navy);font-family:var(--serif)}
+.tbl tbody tr:last-child td{border-bottom:0}
+.tbl tr.total td{border-top:1.5px solid var(--ctl);border-bottom:0;font-weight:600;color:var(--navy);font-family:var(--serif)}
 .tbl tr.total td:first-child{font-family:var(--sans)}
-.tbl tr.base{background:var(--panel)} .tbl tr.base td{font-weight:700}
+.tbl tr.base{background:var(--warm)} .tbl tr.base td{font-weight:700}
 .tbl tr.over td{background:var(--amber-bg)} .tbl tr.over td:first-child{color:var(--amber);font-weight:700}
 .tbl tr.ok td{color:var(--green);font-weight:700}
 .tbl tr.bad td{color:var(--red);font-weight:700}
-.tbl .dot{display:inline-block;width:8px;height:8px;margin-right:6px;vertical-align:middle}
-.boxnote{border:1px solid var(--line);background:var(--panel);padding:9px 11px;margin-top:9px;font-family:var(--mono);font-size:10px;color:var(--ink-2);line-height:1.65;white-space:pre-wrap;border-radius:3px}
-.subgrid{display:grid;gap:26px;grid-template-columns:1fr 1fr}
+.tbl .dot{display:inline-block;width:8px;height:8px;border-radius:2px;margin-right:6px;vertical-align:middle}
+.boxnote{border:1px solid var(--line);background:var(--warm);padding:10px 12px;margin-top:9px;font-family:var(--sans);font-size:11px;color:var(--ink-2);line-height:1.65;white-space:pre-wrap;border-radius:6px}
+.subgrid{display:grid;gap:22px;grid-template-columns:1fr 1fr}
+
+/* ---------- sensitivity heat treatment (mirrors the waterfall's heat-wrap / table.heat) ---------- */
+.heat-wrap{margin-top:8px}
+.heat-key{display:flex;align-items:center;gap:9px;flex-wrap:wrap;margin-top:9px;font-size:11px;color:var(--ink-2)}
+.heat-ramp{display:flex;height:11px;width:150px;border-radius:3px;overflow:hidden;border:1px solid var(--line)}
+.heat-ramp i{flex:1;height:100%}
+.tbl td.heat-cell{padding:0;border-bottom:1px solid var(--line)}
+.tbl tr.base td.heat-cell{padding:0}
+button.heat-btn{display:block;width:100%;border:0;border-radius:0;padding:6px 9px;font:inherit;font-family:var(--sans);font-size:12.5px;font-weight:700;font-variant-numeric:tabular-nums;text-align:right;cursor:pointer;transition:box-shadow .1s}
+button.heat-btn:hover{box-shadow:inset 0 0 0 2px rgba(18,37,64,.35)}
+button.heat-btn:focus-visible{outline:3px solid var(--gold);outline-offset:-3px}
+button.heat-btn.now{box-shadow:inset 0 0 0 2.5px var(--gold)}
+button.heat-btn.now:hover{box-shadow:inset 0 0 0 2.5px var(--gold),inset 0 0 0 4.5px rgba(18,37,64,.3)}
 
 /* ============ MODAL ============ */
-.modal-bd{position:fixed;inset:0;background:rgba(15,33,46,.42);z-index:90;display:flex;align-items:center;justify-content:center;padding:20px}
-.modal{background:#fff;border-radius:4px;box-shadow:var(--shadow);width:470px;max-width:100%;max-height:86vh;display:flex;flex-direction:column}
-.modal h3{font-size:14px;color:var(--navy);padding:16px 20px 4px}
-.modal .sub{font-size:11.5px;color:var(--muted);padding:0 20px 12px}
+.modal-bd{position:fixed;inset:0;background:rgba(18,37,64,.42);z-index:90;display:flex;align-items:center;justify-content:center;padding:20px}
+.modal{background:#fff;border-radius:var(--r);box-shadow:var(--shadow);width:470px;max-width:100%;max-height:86vh;display:flex;flex-direction:column}
+.modal h3{font-size:15px;color:var(--navy);padding:16px 20px 4px}
+.modal .sub{font-size:11.5px;color:var(--ink-3);padding:0 20px 12px;font-family:var(--sans)}
 .modal .mbody{padding:0 20px;overflow:auto}
 .modal .mfoot{display:flex;flex-wrap:wrap;justify-content:flex-end;gap:8px;padding:14px 20px;border-top:1px solid var(--line-2)}
 .save-err{font-size:10.5px;color:var(--red);margin-top:5px}
@@ -281,24 +321,108 @@ details.adv .adv-body{padding:15px 13px;background:#fff}
 .saverow:last-child{border-bottom:0}
 .saverow-main{min-width:0}
 .saverow-name{font-size:12.5px;font-weight:600;color:var(--navy);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.saverow-meta{font-size:10.5px;color:var(--muted);margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.saverow-meta{font-size:10.5px;color:var(--ink-3);margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .saverow-actions{display:flex;gap:5px;flex:0 0 auto}
 .saverow-actions .btn{padding:4px 9px;font-size:10.5px}
 .saverow-actions .btn.icon{padding:4px 7px;font-size:12px}
 .diff{display:grid;grid-template-columns:1fr auto auto auto;gap:5px 10px;font-size:11.5px;align-items:center}
 .diff .lb{color:var(--ink-2)}
-.diff .old{font-family:var(--mono);color:var(--muted);text-decoration:line-through}
-.diff .ar{color:var(--muted-2)}
+.diff .old{font-family:var(--mono);color:var(--ink-3);text-decoration:line-through}
+.diff .ar{color:var(--ink-3)}
 .diff .new{font-family:var(--mono);color:var(--navy);font-weight:700}
 
+/* ============ SLIDES — investment-banking pitch-book template ============
+   Fixed 16:9 page, sharp corners, navy/gold rule system, a slide-number
+   footer, and a "private & confidential" strip — the deck-page conventions
+   used across REPE/IB pitch books, built from the same design tokens as
+   the rest of this exhibit. ============ */
+.slides-bd{position:fixed;inset:0;background:#0a1729;z-index:95;display:flex;flex-direction:column}
+.slides-top{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:14px 22px;flex:0 0 auto}
+.slides-count{font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:#8ba3c4;font-variant-numeric:tabular-nums}
+.slides-close{background:transparent;border:1px solid rgba(255,255,255,.4);color:#e8eef6;border-radius:5px;padding:6px 12px;font-size:11.5px;font-weight:600;cursor:pointer}
+.slides-close:hover{background:rgba(255,255,255,.12);border-color:#fff}
+.slides-stage{flex:1 1 auto;min-height:0;display:flex;align-items:center;justify-content:center;padding:6px 62px 12px;position:relative;container-type:size}
+
+/* fill as much of the viewport as possible while keeping a true 16:9 page,
+   in any window shape (wide or narrow/tall): width is the smaller of "100%
+   of the stage" and "the stage's full height converted to a 16:9 width" via
+   container query units, then height is left to auto-derive from the ratio.
+   (A plain height:100%/max-width:100% pairing looks right on wide windows
+   but silently distorts into a tall box once max-width clamps the width,
+   because height stays pinned at 100% instead of recomputing from the ratio.) */
+.slide{display:none;flex-direction:column;aspect-ratio:16/9;width:min(100%,177.78cqh);height:auto;max-width:100%;max-height:100%;background:#fff;border-radius:2px;box-shadow:0 24px 70px rgba(0,0,0,.45);overflow:hidden}
+.slide.on{display:flex}
+.slide-accent{flex:0 0 auto;height:5px;background:var(--gold)}
+.slide-hd{flex:0 0 auto;display:flex;align-items:flex-end;justify-content:space-between;gap:16px 28px;flex-wrap:wrap;padding:clamp(14px,2.4vw,26px) clamp(22px,4vw,48px) clamp(10px,1.6vw,16px);border-bottom:2px solid var(--navy)}
+.slide-hd-extra{flex:0 0 auto}
+.slide-kicker{display:block;font-size:13px;font-weight:700;letter-spacing:.16em;text-transform:uppercase;color:var(--gold-deep)}
+.slide-title{font-family:var(--serif);font-size:clamp(24px,3.2vw,34px);font-weight:600;letter-spacing:-.005em;color:var(--navy);margin-top:6px}
+.slide-body{flex:1 1 auto;min-height:0;overflow:auto;padding:clamp(16px,2.6vw,28px) clamp(22px,4vw,48px)}
+.slide-ft{flex:0 0 auto;display:flex;align-items:center;justify-content:space-between;gap:12px;border-top:1px solid var(--line);padding:8px clamp(22px,4vw,48px)}
+.slide-ft span{font-size:9px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-3)}
+.slide-ft .pg{font-family:var(--serif);color:var(--navy);font-variant-numeric:tabular-nums}
+
+/* meta line + stat tiles sit in the header, beside the title, above the navy
+   rule — not as a separate row down in the body with dead space above it */
+.slide-intro{display:flex;flex-direction:column;align-items:flex-end;gap:8px}
+.slide .big-stat{display:flex;flex-wrap:wrap;border:1px solid var(--line);flex:0 0 auto}
+.slide .big-stat > div{flex:1 1 170px;position:relative;padding:10px 20px;border-right:1px solid var(--line)}
+.slide .big-stat > div:last-child{border-right:0}
+.slide .big-stat > div::before{content:"";position:absolute;top:0;left:0;right:0;height:3px;background:var(--navy)}
+.slide .big-stat .k{font-size:11px;letter-spacing:.07em;text-transform:uppercase;color:var(--ink-3);font-weight:700}
+.slide .big-stat .v{font-family:var(--serif);font-size:24px;font-weight:600;color:var(--navy);margin-top:3px}
+.slide-subhead{font-family:var(--serif);font-size:19px;font-weight:600;color:var(--navy);margin:16px 0 12px}
+/* the scenario cards under the capital-stack subhead get their own bump too:
+   these classes are shared with the main page's cards, so scope to .slide
+   rather than touching the base rules (which would also resize the main page) */
+.slide .scard-top h3{font-size:21px}
+.slide .scard-top .tag{font-size:12px}
+.slide .sc-item .k{font-size:12px}
+.slide .sc-item .v{font-size:20px}
+.slide .sc-item .s{font-size:13px}
+.slide .scard{padding:18px 20px}
+.slide .scard-body{gap:16px 22px;margin-top:16px}
+.slide h2{font-size:clamp(19px,2.2vw,24px);margin-bottom:16px}
+.slide .stackgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(340px,1fr));gap:20px;flex:1 1 auto}
+.slide .stackgrid .scard{box-shadow:none}
+/* Cap the BAR column, not the whole widget. The axis (40px), gap (14px) and
+   note column (230px) are fixed at 284px, so capping the total width takes the
+   entire reduction out of the bar — halving the total once shrank the bar to a
+   sixth of its size. Sizing the bar track directly is what actually halves the
+   thing you see. 432px is 20% up from the 360px half-size. */
+.slide .stackgrid .stackwrap{grid-template-columns:40px minmax(0,432px) 14px 230px;max-width:716px}
+.slide .cmp-wrap{overflow-x:auto}
+.slide .cmp-wrap table.cmp thead th{background:var(--navy);color:#fff;border-bottom:0;font-weight:700}
+.slide .cmp-wrap table.cmp thead th:first-child{color:#fff}
+.slide .cmp-wrap table.cmp tbody tr:nth-child(even) td{background:var(--warm-2)}
+.slide .cmp-wrap table.cmp tr:hover td{background:var(--lp-wash)}
+.slide .cmp-wrap table.cmp td.best{color:var(--green)}
+
+.slide .pblock{border-top:0;padding:0}
+.slide .pblock .eyebrow{font-size:10.5px;font-weight:700;letter-spacing:.13em;color:var(--gold-deep);margin-top:20px}
+.slide .pblock .eyebrow:first-child{margin-top:0}
+.slide .pblock h2{display:none}
+.slide .pblock .pmeta{display:none}
+.slide .pblock p{font-size:13.5px;line-height:1.6;color:var(--ink-2);border-left:3px solid var(--line);padding-left:14px;margin-top:9px;max-width:none}
+.slide .pblock ul{list-style:none;margin:9px 0 0;padding:0;max-width:none}
+.slide .pblock li{position:relative;padding-left:18px;margin-top:7px;font-size:13px;line-height:1.5;color:var(--ink-2)}
+.slide .pblock li::before{content:"";position:absolute;left:0;top:6px;width:7px;height:7px;background:var(--navy)}
+
+.slidenav{position:absolute;top:50%;transform:translateY(-50%);width:46px;height:46px;border-radius:50%;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.4);color:#fff;font-size:20px;cursor:pointer;display:flex;align-items:center;justify-content:center}
+.slidenav:hover{background:rgba(255,255,255,.22)}
+.slidenav[disabled]{opacity:.3;cursor:default}
+.slidenav.prev{left:14px}
+.slidenav.next{right:14px}
+@media(max-width:760px){.slides-stage{padding:0 14px 20px}.slidenav{display:none}.slide{aspect-ratio:auto;width:100%;height:auto;max-height:100%}}
+
 /* ============ TOOLTIP ============ */
-#tip{position:fixed;z-index:100;background:var(--navy);color:#fff;font-size:10.5px;line-height:1.5;padding:8px 10px;border-radius:3px;max-width:280px;white-space:pre-line;pointer-events:none;opacity:0;transition:opacity .12s;box-shadow:var(--shadow)}
+#tip{position:fixed;z-index:100;background:var(--navy);color:#fff;font-size:10.5px;line-height:1.5;padding:8px 10px;border-radius:6px;max-width:280px;white-space:pre-line;pointer-events:none;opacity:0;transition:opacity .12s;box-shadow:var(--shadow)}
 #tip.on{opacity:1}
 #tip .th{font-weight:700;font-size:11px;display:block;margin-bottom:3px}
 /* scoped to the <i> element it is used on. As a bare class selector this also matched
    .flagrow.i -- the info-level rows in the status panel -- collapsing each one into a 12px
    circle and spilling its text across the panel. */
-i.i{display:inline-flex;align-items:center;justify-content:center;width:12px;height:12px;border:1px solid var(--muted-2);border-radius:50%;font-size:8px;color:var(--muted);cursor:help;font-weight:700;font-style:normal;flex:0 0 auto;line-height:1}
+i.i{display:inline-flex;align-items:center;justify-content:center;width:12px;height:12px;margin-left:6px;border:1px solid var(--ink-3);border-radius:50%;font-size:8px;color:var(--ink-3);cursor:help;font-weight:700;font-style:normal;flex:0 0 auto;line-height:1;vertical-align:middle}
 i.i:hover{border-color:var(--navy);color:var(--navy)}
 
 /* ============ MODES ============ */
@@ -307,17 +431,24 @@ body.present .workspace{display:none}
 body.present .section:first-of-type,body.present #presentOpen + .section{margin-top:22px}
 .present-only{display:none}
 body.present .present-only{display:block}
-/* framing blocks: deal context above the exhibit, conclusion and open items below */
-.pblock{border:1px solid var(--line);border-radius:3px;background:var(--panel);padding:15px 17px}
-.pblock h2{font-family:var(--serif);font-size:19px;font-weight:700;letter-spacing:-.005em;color:var(--navy);margin:5px 0 2px}
-.pblock .pmeta{font-size:11px;color:var(--muted);font-variant-numeric:tabular-nums}
-.pblock p{margin:9px 0 0;font-size:11.5px;line-height:1.6;color:var(--ink-2);max-width:112ch}
-.pblock ul{margin:6px 0 0;padding-left:17px;font-size:11.5px;line-height:1.6;color:var(--ink-2);max-width:112ch}
+/* Edit Mode is a fully editing page: no analysis preview underneath the
+   workspace. The full analysis canvas (comparison table, capital stack,
+   sensitivity, structural comparison) only appears in Presentation mode,
+   print, and the Slides feature — see the print override below. */
+body:not(.present) .analysis-canvas{display:none}
+/* framing blocks: deal context above the exhibit, conclusion and open items below —
+   styled as the waterfall page styles its footer disclaimer, not as a boxed callout */
+.pblock{border-top:1px solid var(--line);padding:20px 0}
+.pblock h2{font-family:var(--serif);font-size:clamp(22px,2.6vw,28px);font-weight:600;letter-spacing:-.005em;color:var(--navy);margin:7px 0 6px}
+.pblock .pmeta{font-size:13.5px;color:var(--ink-2);font-variant-numeric:tabular-nums}
+.pblock p{margin:9px 0 0;font-size:12px;line-height:1.6;color:var(--ink-2);max-width:112ch}
+.pblock ul{margin:6px 0 0;padding-left:17px;font-size:12px;line-height:1.6;color:var(--ink-2);max-width:112ch}
 .pblock li{margin-top:3px}
 .pblock .eyebrow{display:block}
 .pblock p + .eyebrow{margin-top:15px}
 .pblock .eyebrow + p{margin-top:5px}
 #presentClose{margin-top:34px}
+
 
 /* ============ RESPONSIVE ============ */
 @media (max-width:1439px){
@@ -328,8 +459,8 @@ body.present .present-only{display:block}
   .shell{padding:0 18px 56px}
   .workspace{grid-template-columns:170px minmax(0,1fr)}
   .summary{display:none}
-  .stackwrap{grid-template-columns:36px minmax(0,1fr) 12px 160px}
-  .note{width:160px}
+  .stackwrap{grid-template-columns:36px minmax(0,1fr) 12px 200px;max-width:800px}
+  .note{width:200px}
 }
 @media (max-width:1200px){
   .save-ind{max-width:65px}
@@ -347,40 +478,52 @@ body.present .present-only{display:block}
 @media (max-width:1023px){
   .scengrid{grid-template-columns:1fr !important}
   .subgrid{grid-template-columns:1fr}
-  .masthead{flex-wrap:wrap}
+  .masthead-in{flex-wrap:wrap}
 }
 @media (max-width:760px){
   .workspace{grid-template-columns:1fr}
   .nav{display:flex;overflow-x:auto;border-right:0;border-bottom:1px solid var(--line);padding:0}
   .nav-grp{display:none}
   .nav a,.nav button{border-left:0;border-bottom:2px solid transparent;white-space:nowrap;width:auto}
-  .nav a.on,.nav button.on{border-left:0;border-bottom-color:var(--navy)}
+  .nav a.on,.nav button.on{border-left:0;border-bottom-color:var(--gold)}
   .fgrid,.fgrid.c2,.fgrid.c4{grid-template-columns:1fr}
   .riskrail{display:none}
   .rowh,.rowr,.rowf{grid-template-columns:minmax(0,1fr) 100px 84px 74px 28px}
   .toolbar{flex-wrap:wrap;position:static}
   .toolbar-actions{max-width:100%;margin-right:0;flex-wrap:wrap}
   .capital-stack-analysis-section{padding:18px 14px 22px}
+  .masthead{padding:16px 18px 14px}
 }
 
-/* ============ PRINT ============ */
+/* ============ PRINT — letter portrait, matching the waterfall page's own print layout ============
+   The original file printed landscape (10mm margins) specifically to give a 3-column scenario
+   grid enough width. Portrait is narrower, so the scenario grid now stacks to one column per
+   print page instead of running 2-3 across — the exhibit prints longer, not clipped or shrunk.
+   This is a deliberate layout change, flagged per the "flag before touching layout" rule. */
 @media print{
-  @page{size:letter landscape;margin:10mm}
-  body{font-size:9.5px;background:#fff}
-  .shell{max-width:none;padding:0}
+  @page{margin:12mm}
+  /* the screen layout makes body/.shell column flexes so Edit Mode's workspace
+     can fill the viewport with no blank space; that's a screen-only concern,
+     so drop back to plain block flow for print rather than risk flex
+     interacting oddly with page-break calculations */
+  body{display:block;min-height:0;font-size:9.5px;background:#fff}
+  .shell{display:block;flex:none;min-height:0;max-width:none;padding:0}
   .no-print,.edit-only,.workspace,.toolbar,#tip{display:none !important}
   .present-only{display:block !important}
-  .analysis-canvas{background:#fff;border:0;box-shadow:none;padding:0;margin-top:0}
+  .masthead{margin:0;padding:0 0 12px;border-bottom:2px solid var(--gold);background:#fff;color:var(--ink)}
+  .masthead h1,.mast-sub{color:var(--navy)}
+  .mast-sub{color:var(--ink-2)}
+  .mast-metrics{background:var(--line)}
+  .mast-m{background:#fff}
+  .mast-m .k{color:var(--ink-3)}
+  .mast-m .v{color:var(--navy)}
+  .analysis-canvas{display:block !important;background:#fff;border:0;box-shadow:none;padding:0;margin-top:10px}
   .scard{box-shadow:none}
-  .capital-stack-analysis-section{background:#fff;border:1px solid #dce5ec;box-shadow:none}
-  /* P2 -- a scenario column runs ~910px against ~720px of usable height on landscape letter
-     at 10mm margins, so break-inside:avoid on it (or on the section) is a rule the page
-     cannot honour. Break at a granularity that fits: sections and columns may break, every
-     block inside them stays whole, and no heading is left stranded from its first row. */
+  .capital-stack-analysis-section{background:#fff;border:1px solid var(--line);box-shadow:none}
   .section{margin-top:14px;break-inside:auto}
   .sec-head{break-after:avoid}
-  .scengrid{grid-template-columns:1fr 1fr !important;gap:14px}
-  .scencol{break-inside:auto}
+  .scengrid{grid-template-columns:1fr !important;gap:14px}
+  .scencol{break-inside:avoid}
   .scard,.metrics,.stackwrap,.pblock,.boxnote{break-inside:avoid}
   .scard{break-after:avoid}
   .tbl,.cmp{break-inside:auto}
@@ -391,36 +534,41 @@ body.present .present-only{display:block}
   .tscroll .cmp th:first-child,.tscroll .cmp td:first-child{position:static !important;border-right:0}
   .pblock{background:#fff}
   #presentClose{margin-top:14px}
-  .stackwrap{height:320px}
+  .stackwrap{height:340px}
   .seg,.note{transition:none !important}
   .tbl td,.tbl th,.cmp td,.cmp th{padding:3px 6px}
+  button.heat-btn{cursor:default}
+  button.heat-btn:hover{box-shadow:none}
   *{-webkit-print-color-adjust:exact;print-color-adjust:exact}
 }
 @media (prefers-reduced-motion:reduce){*{transition:none !important;animation:none !important}}
 </style>
 </head>
 <body>
-<div class="shell">
-<!-- ============ MASTHEAD ============ -->
 <div class="masthead">
-  <div>
-    <div class="eyebrow">Illustrative Exhibit · Development Finance</div>
-    <h1 id="mastTitle">Capital Stack Comparison — Construction Financing Alternatives</h1>
-    <div class="mast-sub" id="mastSub"></div>
+  <div class="masthead-in">
+    <div>
+      <h1 id="mastTitle">Capital Stack Comparison</h1>
+      <div class="mast-sub" id="mastSub">How the equity requirement and cost of capital change across financing structures at a fixed total development cost.</div>
+    </div>
+    <div class="mast-metrics" id="mastMetrics"></div>
   </div>
-  <div class="mast-metrics" id="mastMetrics"></div>
 </div>
+<div class="shell">
 
-<!-- ============ TOOLBAR ============ -->
+<!-- ============ TOOLBAR — light text-style action row, every control kept but demoted ============ -->
 <div class="toolbar no-print">
   <div class="mode-switch">
-    <button class="btn on" id="btnEdit">Edit Mode</button>
+    <button class="btn on" id="btnEdit">Edit</button>
     <button class="btn" id="btnPresent">Presentation</button>
+    <button class="btn" id="btnSlides" data-act="slides">Slides</button>
   </div>
+  <div class="toolbar-div"></div>
   <div class="toolbar-actions">
     <button class="btn icon edit-only" id="btnUndo" title="Undo (Ctrl+Z)" aria-label="Undo">↶</button>
     <button class="btn icon edit-only" id="btnRedo" title="Redo (Ctrl+Shift+Z)" aria-label="Redo">↷</button>
     <button class="btn edit-only" id="btnSave">Save</button>
+    <button class="btn" id="btnPrint" data-act="print">Print</button>
     <div class="menu edit-only">
       <button class="btn" id="btnExport" aria-haspopup="true"><span class="lbl-full">Export ▾</span><span class="lbl-short">Export</span></button>
       <div class="menu-pop" id="exportMenu" hidden>
@@ -443,7 +591,6 @@ body.present .present-only{display:block}
         <button data-act="reset">Reset model…</button>
       </div>
     </div>
-    <button class="btn" id="btnPrint" data-act="print">Print</button>
     <div class="statuswrap">
       <button class="status-pill" id="statusPill" aria-haspopup="true"></button>
       <div class="status-panel" id="statusPanel" hidden></div>
@@ -464,7 +611,7 @@ body.present .present-only{display:block}
 <div class="present-only" id="presentOpen"></div>
 <div class="section" id="cmpSection">
   <div class="sec-head">
-    <h2>Scenario comparison</h2>
+    <h2>How the structures compare</h2>
     <span class="hint" id="cmpHint"></span>
   </div>
   <div id="cmpBody"></div>
@@ -472,29 +619,29 @@ body.present .present-only{display:block}
 
 <div class="section capital-stack-analysis-section" id="capitalStackSection">
   <div class="sec-head">
-    <h2>Capital stack, key metrics &amp; sources and uses</h2>
-    <span class="hint">Segment heights = capital source ÷ total development cost</span>
+    <h2>How each structure is capitalized</h2>
+    <span class="hint">Segment height is that source's share of total development cost</span>
   </div>
   <div class="scengrid" id="scenOutputs"></div>
 </div>
 
 <div class="section">
   <div class="sec-head">
-    <h2>Equity requirement sensitivity</h2>
-    <span class="hint">Ranges are user-defined in the Sensitivity section</span>
+    <h2>How the equity check moves with senior leverage</h2>
+    <span class="hint">Each cell is a full model at that senior LTC — select one to load it</span>
   </div>
   <div class="subgrid" id="sensGrid"></div>
 </div>
 
 <div class="section" id="sofrSection">
-  <div class="sec-head"><h2>Base rate sensitivity</h2><span class="hint" id="sofrHint"></span></div>
+  <div class="sec-head"><h2>How financing cost moves with the base rate</h2><span class="hint" id="sofrHint"></span></div>
   <div id="sofrBody"></div>
 </div>
 
 <div class="section">
   <div class="sec-head">
-    <h2>Structural comparison</h2>
-    <span class="hint">Leverage, capitalization, and cost of capital across scenarios</span>
+    <h2>Where the structures actually differ</h2>
+    <span class="hint">Leverage, capitalization, and cost of capital, side by side</span>
   </div>
   <div id="matrixBody"></div>
 </div>
@@ -505,6 +652,8 @@ body.present .present-only{display:block}
 
 <div id="tip" role="tooltip"></div>
 <div id="modalHost"></div>
+<div id="srStatus" class="sr-only" role="status" aria-live="polite"></div>
+<div id="slidesHost"></div>
 <script>
 "use strict";
 /* ==========================================================================
@@ -1046,6 +1195,7 @@ const hist = { stack:[], idx:-1, timer:null };
 const AUTOKEY='capstack.autosave', SAVEKEY='capstack.saved';
 
 function clone(o){ return JSON.parse(JSON.stringify(o)); }
+function say(msg){ const el=document.getElementById('srStatus'); if(el) el.textContent=msg; }
 
 /* ---------- history ---------- */
 function pushHistory(){
@@ -1121,12 +1271,26 @@ function affix(kind,o){
 /* ---------- input builders ---------- */
 function tipAttr(t,title){ return t? ' data-tip="'+esc(t)+'"'+(title?' data-tiptitle="'+esc(title)+'"':'') : ''; }
 function infoIcon(t,title){ return t? '<i class="i" tabindex="0"'+tipAttr(t,title)+'>i</i>' : ''; }
+/* Plain-English label + description, matching the waterfall page's assumption-rail fields:
+   the description sits under the label at all times rather than behind a hover icon, and a
+   valid-range hint sits under the control. A slider range is the source of truth for the hint
+   when one exists; o.hint overrides it for fields with no slider. */
+function techLine(o){ return o.tip? '<span class="tech">'+esc(o.tip)+'</span>' : ''; }
+function hintLine(kind,o,a){
+  const text=o.hint!==undefined? o.hint
+    : o.slider? (kind==='pct'||kind==='rate'||kind==='raten'
+        ? o.slider[0]+'% – '+o.slider[1]+'%'
+        : kind==='bps' ? o.slider[0]+' – '+o.slider[1]+' bps'
+        : String(o.slider[0])+' – '+String(o.slider[1])+(a.suf?' '+a.suf:''))
+    : null;
+  return text? '<p class="hint">'+esc(text)+'</p>' : '';
+}
 
 function F(label,path,kind,o){
   o=o||{};
   const v=getPath(state,path), a=affix(kind,o), calc=!!o.calc;
   return '<div class="f'+(calc?' calc-f':'')+'"'+(o.style?' style="'+o.style+'"':'')+'>'+
-    '<label>'+esc(label)+infoIcon(o.tip,label)+'</label>'+
+    '<label><span class="lab">'+esc(label)+techLine(o)+'</span></label>'+
     '<div class="ip'+(kind==='text'?' text':'')+(calc?' calc':'')+'">'+
       (a.pre?'<span class="af pre">'+esc(a.pre)+'</span>':'')+
       (calc
@@ -1139,20 +1303,21 @@ function F(label,path,kind,o){
         ? '<button type="button" class="af suf clr" data-clear="'+path+'" title="Clear — leave unassumed" aria-label="Clear '+esc(label)+'">×</button>'
         : '')+
     '</div>'+
-    (o.slider?'<input type="range" data-path="'+path+'" data-kind="slider-'+kind+'" min="'+o.slider[0]+'" max="'+o.slider[1]+'" step="'+o.slider[2]+'" value="'+((kind==='pct'||kind==='rate')?v*100:v)+'">':'')+
+    (o.slider?'<input type="range" class="slide" data-path="'+path+'" data-kind="slider-'+kind+'" min="'+o.slider[0]+'" max="'+o.slider[1]+'" step="'+o.slider[2]+'" value="'+((kind==='pct'||kind==='rate')?v*100:v)+'">':'')+
+    (calc? '' : hintLine(kind,o,a))+
     (o.help?'<div class="help"'+(o.helpId?' id="'+o.helpId+'"':'')+'>'+o.help+'</div>':'')+
   '</div>';
 }
 function S(label,path,opts,o){
   o=o||{}; const v=getPath(state,path);
-  return '<div class="f"><label>'+esc(label)+infoIcon(o.tip,label)+'</label>'+
+  return '<div class="f"><label><span class="lab">'+esc(label)+techLine(o)+'</span></label>'+
     '<div class="ip"><select data-path="'+path+'" data-kind="text"'+(o.struct?' data-struct="1"':'')+'>'+
     opts.map(p=>'<option value="'+esc(p[0])+'"'+(String(v)===String(p[0])?' selected':'')+'>'+esc(p[1])+'</option>').join('')+
     '</select></div>'+(o.help?'<div class="help">'+o.help+'</div>':'')+'</div>';
 }
 function R(label,path,opts,o){
   o=o||{}; const v=getPath(state,path);
-  return '<div class="f"><label>'+esc(label)+infoIcon(o.tip,label)+'</label><div class="radio">'+
+  return '<div class="f"><label><span class="lab">'+esc(label)+techLine(o)+'</span></label><div class="radio">'+
     opts.map(p=>'<label><input type="radio" name="'+path.replace(/\./g,'_')+'" data-path="'+path+'" value="'+esc(p[0])+'"'+(String(v)===String(p[0])?' checked':'')+'>'+esc(p[1])+'</label>').join('')+
     '</div></div>';
 }
@@ -1225,20 +1390,20 @@ function edHead(title,sub,actions){
 function secProject(ctx){
   return edHead('Project','Identity and total cost. Every source in the model is sized against total development cost.')+
     '<div class="block"><h3>Identification</h3><div class="fgrid">'+
-      F('Project name','project.name','text')+
-      F('Location','project.location','text')+
-      F('As of','project.asOf','text')+
+      F('Project name','project.name','text',{tip:'How this exhibit identifies the deal in headers and exports.'})+
+      F('Location','project.location','text',{tip:'City and state — shown under the exhibit title.'})+
+      F('As of','project.asOf','text',{tip:'The date these assumptions were current.'})+
     '</div></div>'+
     '<div class="block"><h3>Cost &amp; scale</h3><div class="fgrid">'+
-      F('Number of units','project.units','num',{unit:'units'})+
+      F('Number of units','project.units','num',{unit:'units',tip:'Total residential units. Used only to compute cost per unit.'})+
       F('Total development cost','project.tdc','money',{tip:T.tdc})+
       F('Land value / basis','project.landBasis','money',{tip:'Informational. Sits within total development cost; use it to sanity-check a land contribution.'})+
       F('Cost per unit','project.__cpu','money',{calc:true,id:'calc-cpu'})+
     '</div></div>'+
     '<div class="block"><h3>Timing</h3><div class="fgrid">'+
-      F('Construction period','project.constructionMonths','num',{unit:'months'})+
-      F('Financing period','project.financingMonths','num',{unit:'months'})+
-      F('Stabilization period','project.stabilizationMonths','num',{unit:'months'})+
+      F('Construction period','project.constructionMonths','num',{unit:'months',tip:'Months of vertical construction. Feeds interest carry when carry is modeled.'})+
+      F('Financing period','project.financingMonths','num',{unit:'months',tip:'Total months the construction financing is expected to stay outstanding.'})+
+      F('Stabilization period','project.stabilizationMonths','num',{unit:'months',tip:'Months from completion to stabilized occupancy. Informational only.'})+
       F('Exit assumption (narrative only — not modeled)','project.exitAssumption','text')+
     '</div></div>';
 }
@@ -1248,8 +1413,8 @@ function secMarket(ctx){
   return edHead('Market assumptions','Reference rates and the leverage constraint applied across every scenario.')+
     '<div class="block"><h3>Reference rates</h3><div class="fgrid">'+
       F('SOFR','market.sofr','rate',{slider:[0,10,0.05],tip:'Reference rate for floating-rate tranches. Changing it reprices every floating tranche in the model.'})+
-      F('Prime rate','market.prime','rate')+
-      F('Base rate note','market.sofrLabel','text')+
+      F('Prime rate','market.prime','rate',{tip:'Alternate reference rate, used only if a tranche is priced off prime instead of SOFR.'})+
+      F('Base rate note','market.sofrLabel','text',{tip:'Freeform label describing the rate path assumed — shown wherever the base rate is cited.'})+
     '</div>'+
     '<div class="boxnote" id="rateSummary"></div></div>'+
     '<div class="block"><h3>Leverage constraint</h3><div class="fgrid">'+
@@ -1299,7 +1464,7 @@ function secSponsor(ctx){
       '<button class="btn" data-act="addother">+ Add source</button></div>';
 
   return edHead('Sponsor &amp; other sources','Sponsor sources are held identical across scenarios. Equity credit determines which dollars reduce the LP requirement.')+
-    '<div class="block"><h3>Sponsor / GP sources <span style="font-weight:400;text-transform:none;letter-spacing:0;font-size:10.5px;color:var(--muted)">Credit = recognized by the lender as equity</span></h3>'+
+    '<div class="block"><h3>Sponsor / GP sources <span style="font-weight:400;text-transform:none;letter-spacing:0;font-size:10.5px;color:var(--ink-3)">Credit = recognized by the lender as equity</span></h3>'+
       '<div class="rows"><div class="rowh"><div>Source</div><div>Classification</div><div>Amount</div><div>Equity credit</div><div></div></div>'+
       rows+'<div class="rowf" id="sponsorFoot"></div></div>'+
       '<div style="margin-top:9px"><button class="btn" data-act="addsponsor">+ Add sponsor source</button></div>'+
@@ -1328,7 +1493,7 @@ function secScenario(i,ctx){
     '<div class="fgrid">'+
       S('Instrument',J+'.type',Object.keys(JUNIOR_TYPES).map(k=>[k,JUNIOR_TYPES[k]]),
         {struct:true,tip:'Second-lien and mezzanine debt sit inside total debt. Preferred and structured equity sit outside it unless you override the classification.'})+
-      F('Instrument label',J+'.label','text')+
+      F('Instrument label',J+'.label','text',{tip:'How this tranche is described in the stack graphic and tables.'})+
       R('Sizing',J+'.mode',[['ltc','% of TDC'],['amount','Amount']])+
       F('Junior % of TDC',J+'.ltc','pct',{slider:[0,50,0.5],calc:sc.junior.mode!=='ltc',id:'calc-jltc-'+i})+
       F('Junior amount',J+'.amount','money',{calc:sc.junior.mode!=='amount',id:'calc-jamt-'+i})+
@@ -1352,8 +1517,8 @@ function secScenario(i,ctx){
       F('Structure tag',p+'.tag','text')+
     '</div></div>'+
     '<div class="block"><h3>Senior debt</h3><div class="fgrid">'+
-      F('Lender',SR+'.lender','text')+
-      F('Facility type',SR+'.type','text')+
+      F('Lender',SR+'.lender','text',{tip:'The institution funding the first-priority loan.'})+
+      F('Facility type',SR+'.type','text',{tip:'How the senior loan is described on the term sheet.'})+
       R('Sizing',SR+'.mode',[['ltc','LTC'],['amount','Loan amount']],{tip:T.mode})+
       F('Senior LTC',SR+'.ltc','pct',{slider:[0,100,0.5],calc:sc.senior.mode!=='ltc',id:'calc-ltc-'+i,tip:T.ltc})+
       F('Loan amount',SR+'.amount','money',{calc:sc.senior.mode!=='amount',id:'calc-amt-'+i})+
@@ -1501,10 +1666,6 @@ function renderPresentOpen(ctx,rs){
     '<div class="eyebrow">Basis of preparation</div>'+
     '<h2>'+esc(p.name||'Untitled project')+'</h2>'+
     '<div class="pmeta">'+esc(meta)+'</div>'+
-    '<p>This is an illustrative exhibit. The assumptions behind it are modeled, not lender-confirmed, and senior '+
-      'debt is sized on loan-to-cost alone — no debt-service coverage, debt-yield or appraised-value test is applied.</p>'+
-    '<p>It answers one question: how the equity requirement and the cost of capital change across financing '+
-      'structures at a fixed total development cost of '+fmtMoney(ctx.tdc)+'.</p>'+
   '</div>';
 }
 function renderPresentClose(ctx,rs,confirms){
@@ -1583,8 +1744,7 @@ function renderComparison(ctx,rs){
   h+='</tbody></table>';
   document.getElementById('cmpBody').innerHTML=
     '<div class="tscroll">'+h+'</div>'+
-    (rs.some(r=>r.lpOverridden)?'<div class="footnote">† LP equity manually overridden; not calculated as the residual.</div>':'')+
-    '<div class="footnote">Highlighting marks the objectively lower figure only where lower is unambiguously cheaper — blended cost of debt, financing fees, and a reconciled sources and uses. Leverage, equity requirement and proceeds are not ranked: more leverage lowers the equity cheque and raises risk, and which side of that trade is preferable is a judgement, not a calculation.</div>';
+    (rs.some(r=>r.lpOverridden)?'<div class="footnote">† LP equity manually overridden; not calculated as the residual.</div>':'');
   document.getElementById('cmpHint').textContent=
     'Reference rate '+(state.market.sofrLabel||'SOFR')+' at '+fmtRate(ctx.sofr)+'  ·  combined debt LTC ceiling '+fmtPct(ctx.maxCombinedLTC);
 }
@@ -1595,7 +1755,7 @@ function renderScenarioColumns(ctx,rs){
   /* cap at three columns and wrap; beyond three, per-column bar width collapses */
   el.style.gridTemplateColumns='repeat('+Math.min(rs.length,3)+',minmax(0,1fr))';
   el.innerHTML=rs.map((r,i)=>
-    '<div class="scencol">'+scenarioCard(r,i)+stackShell(i)+metricCards(r)+sourcesUses(r,ctx)+readNote(r,ctx)+'</div>'
+    '<div class="scencol">'+scenarioCard(r,i)+stackShell(i)+metricCards(r)+sourcesUses(r,ctx)+'</div>'
   ).join('');
   rs.forEach((r,i)=>drawStack(r,i,ctx));
   requestAnimationFrame(equalizeCards);      /* after layout, so the cards can be measured */
@@ -1702,49 +1862,13 @@ function sourcesUses(r,ctx){
       '</td><td>'+fmtMoney(r.covRequired)+'</td></tr>'+
     '<tr class="'+(r.covPass?'ok':'bad')+'"><td>'+(r.covPass?'✓ Covenant test — met':'✕ Covenant test — short')+
       '</td><td>'+fmtPct(Math.abs(r.covEquityPct-r.covRequiredPct),2)+'</td><td>'+
-      fmtMoney(Math.abs(r.covEquity-r.covRequired))+'</td></tr></tbody></table>'+
-    '<div class="footnote">Equity credit governs this test only. Sources and uses counts every dollar '+
-      'that funds the project, credited or not.</div>';
+      fmtMoney(Math.abs(r.covEquity-r.covRequired))+'</td></tr></tbody></table>';
   return '<table class="tbl"><caption>Sources &amp; uses</caption>'+
     '<thead><tr><th>Source</th><th>% of TDC</th><th>Amount</th></tr></thead><tbody>'+rows.join('')+
     '<tr class="total"><td>Total sources</td><td>'+pc(r.sources)+'</td><td>'+fmtMoney(r.sources)+'</td></tr>'+
     '<tr class="total"><td>Total uses (TDC)</td><td>'+pc(r.uses)+'</td><td>'+fmtMoney(r.uses)+'</td></tr>'+
     '<tr class="'+(bal?'ok':'bad')+'"><td>'+(bal?'✓ Funding gap — balanced':(r.gap>0?'✕ Unfunded gap':'✕ Excess sources'))+
       '</td><td>'+pc(Math.abs(r.gap))+'</td><td>'+fmtMoney(Math.abs(r.gap))+'</td></tr></tbody></table>'+cov;
-}
-
-function readNote(r,ctx){
-  const s=[];
-  s.push('Senior proceeds of <b>'+fmtMoney(r.seniorAmt)+'</b> at <b>'+fmtPct(r.seniorLTC)+'</b> LTC price at <b>'+fmtRate(r.seniorRate)+'</b>'+
-    (r.sc.senior.rateType==='fixed'?' fixed.':' ('+(state.market.sofrLabel||'base')+' '+fmtRate(r.baseRate)+' + '+Math.round(r.sc.senior.spreadBps)+' bps).'));
-  if(r.juniorOn){
-    /* 2.13 -- name the instrument, then state its classification separately. The old copy
-       said "Preferred equity" for any tranche with treatAsDebt off, mezzanine included. */
-    const jname=JUNIOR_TYPES[r.sc.junior.type]||'Junior capital';
-    s.push(jname+' of <b>'+fmtMoney(r.juniorAmt)+'</b> ('+fmtPct(r.juniorLTC)+' of TDC) at '+rng(r.juniorRate,fmtRate)+
-      (r.juniorIsDebt? ' lifts combined debt LTC to <b>'+fmtPct(r.combinedDebtLTC)+'</b> and blended debt cost to '+rng(r.blendedDebt,fmtRate)+'.'
-                     : ', classified outside total debt for this analysis; combined debt LTC stays at <b>'+fmtPct(r.combinedDebtLTC)+'</b> and total leverage including it is '+fmtPct(r.totalLeverage)+'.'));
-  } else s.push('No junior tranche: one lender, one set of loan documents, no intercreditor agreement.');
-  if(ctx.otherTotal>0){
-    s.push('Other project sources of <b>'+fmtMoney(ctx.otherTotal)+'</b>: '+
-      ctx.otherLines.filter(l=>l.amount>0).map(l=>
-        fmtMoney(l.amount)+' '+(l.label||OTHER_CLASSES[l.cls].label)+' ('+OTHER_CLASSES[l.cls].note+')').join('; ')+'.');
-  }
-  s.push('Common equity of <b>'+fmtMoney(r.commonEquity)+'</b> ('+fmtPct(r.commonEquityPct)+' of TDC) is funded by '+fmtMoney(r.sponsorApplied)+
-    ' of sponsor sources'+(ctx.otherTce>0?', '+fmtMoney(ctx.otherTce)+' of tax-credit equity':'')+
-    ' and <b>'+fmtMoney(r.lpRequired)+'</b> of LP equity'+
-    (r.lpResidual<-5000? ' — those sources exceed the requirement by '+fmtMoney(-r.lpResidual)+'.':'.'));
-  s.push('Lender-recognized equity is <b>'+fmtMoney(r.covEquity)+'</b> ('+fmtPct(r.covEquityPct)+' of TDC) against '+
-    fmtPct(r.covRequiredPct)+' implied by the leverage ceiling — '+(r.covPass?'the covenant test is met.':'short by '+fmtMoney(r.covShortfall)+'.'));
-  /* 2.13 -- an intercreditor agreement is a debt instrument. Equity-classified tranches are
-     governed inside the joint venture documents instead. */
-  const jrEq = r.juniorOn && !r.juniorIsDebt;
-  s.push('Capital providers: <b>'+r.providers+'</b>'+
-    (r.intercreditor
-      ? (jrEq? '; a recognition and standstill agreement within the joint venture documents is required.'
-             : '; an intercreditor agreement is required.')
-      : '.'));
-  return '<div class="boxnote" style="font-family:var(--sans);font-size:11.5px;line-height:1.6;white-space:normal">'+s.join(' ')+'</div>';
 }
 
 /* ---------- capital stack ---------- */
@@ -1853,6 +1977,32 @@ function decollide(notes){
   els.forEach(el=>{ el.style.top=(parseFloat(el.style.top)/H*100)+'%'; });
 }
 
+/* ---------- sensitivity heat treatment (ported from the waterfall page's Heat module:
+   same light-to-navy ramp, same luminance-based ink choice, same "cell is a button that
+   loads the scenario" interaction — applied to this page's driving sensitivity columns) ---------- */
+function heatRampColor(t){
+  const a=[244,242,238], b=[18,37,64], o=[];
+  t=Math.max(0,Math.min(1,t));
+  for(let i=0;i<3;i++) o.push(Math.round(a[i]+(b[i]-a[i])*t));
+  return o;
+}
+function heatRgbCss(c){ return 'rgb('+c[0]+','+c[1]+','+c[2]+')'; }
+function heatInkOn(c){
+  const f=c.map(v=>{ v/=255; return v<=0.03928?v/12.92:Math.pow((v+0.055)/1.055,2.4); });
+  const L=0.2126*f[0]+0.7152*f[1]+0.0722*f[2];
+  return L>0.18?'#000000':'#ffffff';
+}
+function heatCell(v,lo,hi,display,now,dataAttrs,label){
+  const t=(isFinite(v) && hi>lo) ? (v-lo)/(hi-lo) : 0.5;
+  const col=heatRampColor(t);
+  return '<button type="button" class="heat-btn'+(now?' now':'')+'" style="background:'+heatRgbCss(col)+';color:'+heatInkOn(col)+'"'+
+    dataAttrs+' aria-label="'+esc(label)+'">'+esc(display)+'</button>';
+}
+function heatKey(lo,hi,fmt){
+  let ramp=''; for(let s=0;s<=10;s++) ramp+='<i style="background:'+heatRgbCss(heatRampColor(s/10))+'"></i>';
+  return '<div class="heat-key"><span>'+esc(fmt(lo))+'</span><span class="heat-ramp">'+ramp+'</span><span>'+esc(fmt(hi))+'</span></div>';
+}
+
 /* ---------- sensitivity ---------- */
 function renderSensitivity(ctx,rs){
   /* 2.10 -- resolve by scenario id. Duplicating a scenario splices at i+1, so a positional
@@ -1882,31 +2032,37 @@ function renderSensitivity(ctx,rs){
     pts.push(baseLTC);
   }
   pts.sort((a,b)=>a-b);
-  const rowsA=pts.map(p=>{
-    const c=calcScenario(A.sc,ctx,{seniorLTC:p}), base=Math.abs(p-A.seniorLTC)<1e-6;
+  const cellsA=pts.map(p=>({p, c:calcScenario(A.sc,ctx,{seniorLTC:p})}));
+  const lpVals=cellsA.map(x=>x.c.lpRequired).filter(v=>isFinite(v));
+  const lpLo=Math.min.apply(null,lpVals), lpHi=Math.max.apply(null,lpVals);
+  const rowsA=cellsA.map(({p,c})=>{
+    const base=Math.abs(p-A.seniorLTC)<1e-6;
     /* 2.7 -- a row that breaches the leverage ceiling is not an ordinary row */
     const over=c.totalLeverage > ctx.maxCombinedLTC + 1e-9;
     /* 2.7 -- the sign of the gap is the whole point of the column */
     const gap = Math.abs(c.gap)<=5000 ? 'Balanced'
       : fmtMoney(Math.abs(c.gap)) + (c.gap>0 ? ' short' : ' excess');
-    return '<tr class="'+(base?'base':'')+(over?' over':'')+'"><td>'+fmtPct(p)+(base?' — base case':'')+
+    const label='Senior LTC '+fmtPct(p)+' — LP required '+fmtMoney(c.lpRequired)+'. Select to load this senior LTC into '+esc(A.sc.name)+'.';
+    return '<tr class="'+(base?'base':'')+(over?' over':'')+'"><td class="heat-cell">'+
+      heatCell(c.lpRequired,lpLo,lpHi,fmtPct(p)+(base?' — base':''),base,
+        ' data-act="loadltc" data-i="'+idxA+'" data-ltc="'+p+'"',label)+
       (over?'<sup>‡</sup>':'')+'</td><td>'+fmtMoney(c.seniorAmt)+
       '</td><td>'+fmtMoney(c.commonEquity)+'</td><td>'+fmtMoney(c.sponsorApplied)+'</td><td>'+fmtMoney(c.lpRequired)+
       '</td><td>'+gap+'</td></tr>';
   }).join('');
-  const anyOver = pts.some(p=>calcScenario(A.sc,ctx,{seniorLTC:p}).totalLeverage > ctx.maxCombinedLTC + 1e-9);
+  const anyOver = cellsA.some(x=>x.c.totalLeverage > ctx.maxCombinedLTC + 1e-9);
 
   /* 2.5 -- "equity saved" is a function of amounts, not of the junior rate, so it was a
      constant column inside a grid where everything else varies. It is a single figure and
      belongs in the note. And when the tranche sits outside total debt, the debt-weight table
      answers nothing: five of seven columns are constant. Ask a different question instead. */
-  let rowsB,noteB,headB,colsB;
+  let rowsB,noteB,headB,colsB,keyB='';
   const jrCases=parseList(state.conv.jrSensList).map(x=>x/100);
   if(!B.juniorOn){
     colsB=4;
     headB='<th>Junior cost</th><th>Blended</th>'+
       '<th>Annualized interest (fully drawn)</th><th>vs. '+esc(ref.sc.name.split('—')[0].trim())+'</th>';
-    rowsB='<tr><td colspan="'+colsB+'" style="font-family:var(--sans);color:var(--muted)">'+esc(B.sc.name)+' has no junior tranche. Add junior capital to populate this table.</td></tr>';
+    rowsB='<tr><td colspan="'+colsB+'" style="font-family:var(--sans);color:var(--ink-3)">'+esc(B.sc.name)+' has no junior tranche. Add junior capital to populate this table.</td></tr>';
     noteB='';
   } else if(B.juniorIsDebt){
     /* debt weights are a function of amounts, not of the junior rate -- the same defect as
@@ -1914,14 +2070,20 @@ function renderSensitivity(ctx,rs){
     colsB=4;
     headB='<th>Junior cost</th><th>Blended</th>'+
       '<th>Annualized interest (fully drawn)</th><th>vs. '+esc(ref.sc.name.split('—')[0].trim())+'</th>';
-    rowsB=jrCases.map(p=>{
-      const c=calcScenario(B.sc,ctx,{juniorRate:p});
+    const cellsB=jrCases.map(p=>({p,c:calcScenario(B.sc,ctx,{juniorRate:p})}));
+    const blVals=cellsB.map(x=>x.c.blendedDebt?x.c.blendedDebt.lo:null).filter(v=>v!==null&&isFinite(v));
+    const blLo=Math.min.apply(null,blVals), blHi=Math.max.apply(null,blVals);
+    rowsB=cellsB.map(({p,c})=>{
       const inc=(c.annualDebtInterest&&ref.annualDebtInterest)?c.annualDebtInterest.lo-ref.annualDebtInterest.lo:null;
       const base=B.juniorRate&&Math.abs(p-B.juniorRate.lo)<1e-6;
-      return '<tr class="'+(base?'base':'')+'"><td>'+fmtRate(p)+
-        '</td><td>'+(c.blendedDebt?fmtRate(c.blendedDebt.lo):'—')+'</td><td>'+(c.annualDebtInterest?fmtMoney(c.annualDebtInterest.lo):'—')+
+      const bl=c.blendedDebt?c.blendedDebt.lo:null;
+      const label='Junior cost '+fmtRate(p)+' — blended debt cost '+(bl===null?'not available':fmtRate(bl))+'. Select to load this junior cost into '+esc(B.sc.name)+'.';
+      return '<tr class="'+(base?'base':'')+'"><td class="heat-cell">'+
+        heatCell(bl,blLo,blHi,fmtRate(p)+(base?' — base':''),base,' data-act="loadjrrate" data-i="'+idxB+'" data-rate="'+p+'"',label)+
+        '</td><td>'+(bl===null?'—':fmtRate(bl))+'</td><td>'+(c.annualDebtInterest?fmtMoney(c.annualDebtInterest.lo):'—')+
         '</td><td>'+(inc===null?'—':fmtMoney(inc))+'</td></tr>';
     }).join('');
+    keyB=blVals.length?heatKey(blLo,blHi,fmtRate):'';
     noteB='<div class="boxnote">Blended = (senior × senior rate + junior × junior rate + soft debt × its rate) ÷ total debt\n'+
       'Debt weights do not move with junior pricing: '+fmtMoney(B.seniorAmt)+' ÷ '+fmtMoney(B.totalDebt)+' = '+fmtPct(B.seniorWt)+' senior  ·  '+
       fmtMoney(B.juniorDebt)+' ÷ '+fmtMoney(B.totalDebt)+' = '+fmtPct(B.juniorWt)+' junior'+
@@ -1934,15 +2096,24 @@ function renderSensitivity(ctx,rs){
     colsB=5;
     headB='<th>Preferred return</th><th>Accrued over '+trimNum(ctx.years,2)+' yrs</th>'+
       '<th>Balance + accrual</th><th>Accrual ÷ common equity</th><th>Cost of capital ahead of common</th>';
-    rowsB=jrCases.map(p=>{
+    const cellsB=jrCases.map(p=>{
       const accr=B.prefEquity*p*ctx.years*B.avgOut;
       const ahead=(B.seniorAmt+B.prefEquity)>0
         ? (B.seniorAmt*B.seniorRate + B.prefEquity*p)/(B.seniorAmt+B.prefEquity) : null;
+      return {p,accr,ahead};
+    });
+    const ahVals=cellsB.map(x=>x.ahead).filter(v=>v!==null&&isFinite(v));
+    const ahLo=Math.min.apply(null,ahVals), ahHi=Math.max.apply(null,ahVals);
+    rowsB=cellsB.map(({p,accr,ahead})=>{
       const base=B.juniorRate&&Math.abs(p-B.juniorRate.lo)<1e-6;
-      return '<tr class="'+(base?'base':'')+'"><td>'+fmtRate(p)+'</td><td>'+fmtMoney(accr)+
+      const label='Preferred return '+fmtRate(p)+' — cost of capital ahead of common '+(ahead===null?'not available':fmtRate(ahead))+'. Select to load this rate into '+esc(B.sc.name)+'.';
+      return '<tr class="'+(base?'base':'')+'"><td class="heat-cell">'+
+        heatCell(ahead,ahLo,ahHi,fmtRate(p)+(base?' — base':''),base,' data-act="loadjrrate" data-i="'+idxB+'" data-rate="'+p+'"',label)+
+        '</td><td>'+fmtMoney(accr)+
         '</td><td>'+fmtMoney(B.prefEquity+accr)+'</td><td>'+(B.commonEquity>0?fmtPct(accr/B.commonEquity):'—')+
         '</td><td>'+(ahead===null?'—':fmtRate(ahead))+'</td></tr>';
     }).join('');
+    keyB=ahVals.length?heatKey(ahLo,ahHi,fmtRate):'';
     noteB='<div class="boxnote">'+esc(JUNIOR_TYPES[B.sc.junior.type]||'This tranche')+' is classified outside total debt, so it '+
       'carries no debt weight and does not move blended debt cost. What its pricing does move is the capital '+
       'standing ahead of common equity.\n'+
@@ -1952,40 +2123,50 @@ function renderSensitivity(ctx,rs){
       'Against '+ref.sc.name+' this structure changes the common equity requirement by '+
       fmtMoney(ref.commonEquity-B.commonEquity)+' at every rate in the table.</div>';
   }
+  const keyA=lpVals.length?heatKey(lpLo,lpHi,fmtMoney):'';
   document.getElementById('sensGrid').innerHTML=
-    '<div><table class="tbl"><caption>'+esc(A.sc.name)+' — LP requirement vs. senior proceeds</caption>'+
+    '<div class="heat-wrap"><table class="tbl"><caption>'+esc(A.sc.name)+' — LP requirement vs. senior proceeds. Colored by LP required; select a cell to load that senior LTC.</caption>'+
       '<thead><tr><th>Senior LTC</th><th>Senior loan</th><th>Common equity</th><th>Sponsor sources</th><th>LP required</th><th>Gap (short) / (excess)</th></tr></thead>'+
-      '<tbody>'+rowsA+'</tbody></table>'+
+      '<tbody>'+rowsA+'</tbody></table>'+keyA+
       (anyOver?'<div class="footnote">‡ Total leverage at this senior LTC exceeds the assumed ceiling of '+
         fmtPct(ctx.maxCombinedLTC)+'. Those rows are not fundable under the stated constraint.</div>':'')+
       '<div class="boxnote">LP equity = TDC − senior debt − junior debt − preferred equity − recognized sponsor sources − other sources\n'+
       'Sponsor equity held constant at '+fmtMoney(ctx.sponsorApplied)+' ('+state.conv.sponsorBasis+' basis).'+
       (sensTruncated?'\nRange truncated at '+MAX_SENS_ROWS+' rows. Widen the increment to cover the full range.':'')+
       '</div></div>'+
-    '<div><table class="tbl"><caption>'+esc(B.sc.name)+' — '+
+    '<div class="heat-wrap"><table class="tbl"><caption>'+esc(B.sc.name)+' — '+
       (B.juniorOn&&!B.juniorIsDebt?'cost of the tranche standing ahead of common equity':'blended debt cost vs. junior pricing')+
+      (B.juniorOn?' Select a cell to load that junior cost.':'')+
       '</caption><thead><tr>'+headB+'</tr></thead>'+
-      '<tbody>'+rowsB+'</tbody></table>'+noteB+'</div>';
+      '<tbody>'+rowsB+'</tbody></table>'+keyB+noteB+'</div>';
 }
 
 function renderSOFRTable(ctx,rs){
   const on=state.meta.showSOFR;
   document.getElementById('sofrSection').style.display=on?'':'none';
-  document.getElementById('sofrHint').textContent='Cases set in the Sensitivity section';
+  document.getElementById('sofrHint').textContent='Cases set in Model settings → Sensitivity';
   if(!on) return;
   const pts=parseList(state.conv.sofrList).map(x=>x/100);
   document.getElementById('sofrBody').innerHTML='<div class="subgrid">'+rs.map(r=>{
-    const rows=pts.map(p=>{
-      const c=calcScenario(r.sc,ctx,{sofr:p}), base=Math.abs(p-ctx.sofr)<1e-6;
+    const cells=pts.map(p=>({p,c:calcScenario(r.sc,ctx,{sofr:p})}));
+    const blVals=cells.map(x=>x.c.blendedDebt?x.c.blendedDebt.lo:null).filter(v=>v!==null&&isFinite(v));
+    const blLo=Math.min.apply(null,blVals), blHi=Math.max.apply(null,blVals);
+    const rows=cells.map(({p,c})=>{
+      const base=Math.abs(p-ctx.sofr)<1e-6;
+      const bl=c.blendedDebt?c.blendedDebt.lo:null;
+      const label='Base rate '+fmtRate(p)+' — blended debt cost '+(bl===null?'not available':fmtRate(bl))+'. Select to load this base rate.';
       /* carry is only reported where the scenario actually models it; otherwise every
          surface would have to disagree with the "carry not modeled" confirmation */
-      return '<tr class="'+(base?'base':'')+'"><td>'+fmtRate(p)+(base?' — base':'')+'</td><td>'+fmtRate(c.seniorRate)+
+      return '<tr class="'+(base?'base':'')+'"><td class="heat-cell">'+
+        heatCell(bl,blLo,blHi,fmtRate(p)+(base?' — base':''),base,' data-act="loadsofr" data-sofr="'+p+'"',label)+
+        '</td><td>'+fmtRate(c.seniorRate)+
         '</td><td>'+(c.blendedDebt?rng(c.blendedDebt,fmtRate):'—')+'</td><td>'+(r.carryOn?rng(c.carryTotal,fmtMoney):'Not modeled')+
         '</td><td>'+(r.carryOn?rng({lo:c.carryTotal.lo+c.feesTotal,hi:c.carryTotal.hi+c.feesTotal},fmtMoney)
                               :(c.feesEntered?fmtMoney(c.feesTotal)+' fees only':'Not modeled'))+'</td></tr>';
     }).join('');
-    return '<div><table class="tbl"><caption>'+esc(r.sc.name)+'</caption><thead><tr><th>Base rate</th><th>Senior rate</th>'+
+    return '<div class="heat-wrap"><table class="tbl"><caption>'+esc(r.sc.name)+'. Colored by blended debt cost; select a cell to load that base rate.</caption><thead><tr><th>Base rate</th><th>Senior rate</th>'+
       '<th>Blended debt cost</th><th>Interest carry</th><th>Carry + fees</th></tr></thead><tbody>'+rows+'</tbody></table>'+
+      (blVals.length?heatKey(blLo,blHi,fmtRate):'')+
       '<div class="boxnote">'+(r.carryOn
         ? 'Carry = balance × rate × '+trimNum(ctx.years,2)+' yrs × '+fmtPct(r.avgOut,0)+' average outstanding balance.'
         : 'Interest carry is not modeled for this scenario. Turn on “Model interest carry” to populate the last two columns.')+
@@ -2288,7 +2469,7 @@ function previewPreset(i,key){
     ? '<div class="diff">'+diffs.map(d=>'<span class="lb">'+esc(d[0])+'</span><span class="old">'+esc(d[1])+
         '</span><span class="ar">→</span><span class="new">'+esc(d[2])+'</span>').join('')+'</div>'+
       '<div class="footnote">Everything else in this scenario is left untouched, and every field stays editable afterwards.</div>'
-    : '<p style="font-size:12px;color:var(--muted)">This preset matches the scenario\u2019s current assumptions. Nothing would change.</p>';
+    : '<p style="font-size:12px;color:var(--ink-3)">This preset matches the scenario\u2019s current assumptions. Nothing would change.</p>';
   showModal({title:'Apply "'+PRESETS[key].label+'" to '+sc.name+'?',
     sub:diffs.length?diffs.length+' assumption'+(diffs.length>1?'s':'')+' will change:':'',
     body:body, confirm:diffs.length?'Apply preset':null,
@@ -2441,7 +2622,127 @@ document.addEventListener('click',e=>{
   else if(A==='csv') exportCSV();
   else if(A==='print') window.print();
   else if(A.indexOf('prec-')===0){ state.meta.precision=A.slice(5); commit(); refresh(true); }
+  else if(A==='loadltc'){ const sc=state.scenarios[i]; if(sc){ sc.senior.mode='ltc'; sc.senior.ltc=+act.dataset.ltc;
+    commit(); refresh(true); say('Loaded '+fmtPct(+act.dataset.ltc)+' senior LTC into '+sc.name+'.'); } }
+  else if(A==='loadjrrate'){ const sc=state.scenarios[i]; if(sc){ sc.junior.rateMode='single'; sc.junior.rate=+act.dataset.rate;
+    commit(); refresh(true); say('Loaded '+fmtRate(+act.dataset.rate)+' junior cost into '+sc.name+'.'); } }
+  else if(A==='loadsofr'){ state.market.sofr=+act.dataset.sofr;
+    commit(); refresh(true); say('Loaded '+fmtRate(+act.dataset.sofr)+' base rate.'); }
+  else if(A==='slides') Slides.open();
+  else if(A==='slides-close') Slides.close();
+  else if(A==='slides-prev') Slides.go(-1);
+  else if(A==='slides-next') Slides.go(1);
 });
+
+/* ==========================================================================
+   SLIDES — an executive-summary slideshow built by reusing already-rendered
+   content (LAST's computed results, and cloned nodes from the analysis
+   canvas). No figure here is computed independently of calcScenario().
+   ========================================================================== */
+const Slides=(function(){
+  let idx=0, count=0;
+
+  /* every slide shares the same pitch-book page frame: a gold top accent,
+     a kicker + title header on a navy rule, a scrolling body, and a
+     confidentiality / page-number footer. */
+  function slideWrap(i,total,kicker,title,body,headExtra){
+    return '<div class="slide" data-slide="'+i+'">'+
+      '<div class="slide-accent"></div>'+
+      '<div class="slide-hd"><div><span class="slide-kicker">'+esc(kicker)+'</span><h2 class="slide-title">'+esc(title)+'</h2></div>'+
+        (headExtra?'<div class="slide-hd-extra">'+headExtra+'</div>':'')+
+      '</div>'+
+      '<div class="slide-body">'+body+'</div>'+
+      '<div class="slide-ft"><span>Illustrative exhibit — private &amp; confidential</span>'+
+        '<span class="pg">'+String(i+1).padStart(2,'0')+' / '+String(total).padStart(2,'0')+'</span></div>'+
+    '</div>';
+  }
+
+  function titleStackHeadExtra(){
+    const {ctx,rs}=LAST;
+    return '<div class="slide-intro">'+
+      '<div class="big-stat">'+
+        '<div><div class="k">Total development cost</div><div class="v">'+fmtMoney(ctx.tdc)+'</div></div>'+
+        '<div><div class="k">Financing structures compared</div><div class="v">'+rs.length+'</div></div>'+
+      '</div></div>';
+  }
+  function titleStackBody(){
+    return '<h3 class="slide-subhead">Capital stack by structure</h3><div class="stackgrid">'+[].slice.call(document.querySelectorAll('#scenOutputs .scencol')).map(col=>{
+      const card=col.querySelector('.scard'), stack=col.querySelector('.stackwrap');
+      const cardClone=card?card.cloneNode(true):null;
+      if(cardClone){
+        cardClone.style.minHeight='';   /* the live page equalizes card heights to its own column width; let the slide size naturally */
+        /* strip the edit/duplicate/⋯ controls: they carry ids (menu-card0, etc.) that would
+           collide with the still-present originals behind the overlay, and editing doesn't
+           belong in a presentation slide */
+        const actions=cardClone.querySelector('.scard-actions');
+        if(actions) actions.remove();
+      }
+      const stackClone=stack?stack.cloneNode(true):null;
+      if(stackClone) stackClone.removeAttribute('id');   /* avoid duplicating id="stack-N" while the original sits behind the overlay */
+      return '<div>'+(cardClone?cardClone.outerHTML:'')+(stackClone?stackClone.outerHTML:'')+'</div>';
+    }).join('')+'</div>';
+  }
+  function metricsTakeawayBody(){
+    const cmp=document.getElementById('cmpBody');
+    const close=document.getElementById('presentClose');
+    return '<div class="cmp-wrap">'+(cmp?cmp.innerHTML:'')+'</div>'+
+      '<h3 class="slide-subhead">Summary observations</h3>'+
+      (close? close.innerHTML : '');
+  }
+
+  function buildDom(){
+    const parts=[
+      {kicker:'Overview',title:state.project.name||'Untitled project',body:titleStackBody(),headExtra:titleStackHeadExtra()},
+      {kicker:'Comparative analysis',title:'Key metrics comparison',body:metricsTakeawayBody()}
+    ];
+    count=parts.length;
+    const slides=parts.map((s,i)=>slideWrap(i,count,s.kicker,s.title,s.body,s.headExtra));
+    document.getElementById('slidesHost').innerHTML=
+      '<div class="slides-bd" id="slidesBd" role="dialog" aria-modal="true" aria-label="Executive summary slides">'+
+        '<div class="slides-top">'+
+          '<span class="slides-count" id="slidesCount"></span>'+
+          '<button type="button" class="slides-close" data-act="slides-close">Close ✕</button>'+
+        '</div>'+
+        '<div class="slides-stage">'+
+          '<button type="button" class="slidenav prev" id="slidePrev" data-act="slides-prev" aria-label="Previous slide">‹</button>'+
+          slides.join('')+
+          '<button type="button" class="slidenav next" id="slideNext" data-act="slides-next" aria-label="Next slide">›</button>'+
+        '</div>'+
+      '</div>';
+  }
+  function paint(){
+    document.querySelectorAll('#slidesBd .slide').forEach((el,i)=>el.classList.toggle('on',i===idx));
+    document.getElementById('slidesCount').textContent=(idx+1)+' / '+count;
+    document.getElementById('slidePrev').disabled=idx<=0;
+    document.getElementById('slideNext').disabled=idx>=count-1;
+  }
+  function open(){
+    /* Edit Mode hides .analysis-canvas entirely (display:none). A hidden
+       source has no layout — decollide() would compute against a 0px
+       container and every clone would come out with broken label
+       positions. Force it laid out just long enough to render and clone,
+       then hand display back to the CSS (re-hiding it if still in Edit Mode). */
+    const canvas=document.querySelector('.analysis-canvas');
+    const forceVisible=canvas && getComputedStyle(canvas).display==='none';
+    if(forceVisible) canvas.style.display='block';
+    renderAnalysis();                        /* refresh #scenOutputs / #cmpBody / #presentClose from current state */
+    /* the capital-stack graphic positions its note labels on requestAnimationFrame
+       (see decollide()); wait two frames so those positions are settled before cloning */
+    requestAnimationFrame(()=>requestAnimationFrame(()=>{
+      idx=0; buildDom(); paint();
+      if(forceVisible) canvas.style.display='';
+      document.addEventListener('keydown',onKey);
+    }));
+  }
+  function close(){ document.getElementById('slidesHost').innerHTML=''; document.removeEventListener('keydown',onKey); }
+  function go(d){ idx=Math.max(0,Math.min(count-1,idx+d)); paint(); }
+  function onKey(e){
+    if(e.key==='Escape') close();
+    else if(e.key==='ArrowRight') go(1);
+    else if(e.key==='ArrowLeft') go(-1);
+  }
+  return { open, close, go };
+})();
 
 /* ==========================================================================
    PERSISTENCE / EXPORT
@@ -2514,7 +2815,7 @@ function doSave(){
 function confirmOverwrite(name,list){
   showModal({title:'Save conflict',
     sub:'A saved version named "'+name+'" already exists.',
-    body:'<div style="font-size:12px;color:var(--muted);line-height:1.6">Choose whether to overwrite it or save this as a new version.</div>',
+    body:'<div style="font-size:12px;color:var(--ink-3);line-height:1.6">Choose whether to overwrite it or save this as a new version.</div>',
     cancel:true,confirm:'Overwrite',
     onRender:(close)=>{
       const foot=document.querySelector('#mbd .mfoot');
@@ -2556,7 +2857,7 @@ function doLoad(){
           '<button class="btn icon" data-drop="'+esc(r.id)+'" title="Delete" aria-label="Delete">×</button>'+
         '</div>'+
       '</div>').join('')
-    : '<p style="font-size:12px;color:var(--muted)">No saved versions in this browser yet. Use Save to keep a named version.</p>';
+    : '<p style="font-size:12px;color:var(--ink-3)">No saved versions in this browser yet. Use Save to keep a named version.</p>';
   showModal({title:'Load saved model',cancel:true,body:body,onRender:(close)=>{
     document.querySelectorAll('[data-load]').forEach(b=>b.onclick=()=>{
       const rec=savedModels().find(r=>r.id===b.dataset.load); if(!rec) return;
