@@ -134,7 +134,7 @@ export default function Education() {
             style={{ transitionDelay: '300ms' }}
           >
             <h3 className="font-serif text-xl font-bold text-charcoal mb-6">Certifications</h3>
-            <div className="grid sm:grid-cols-2 gap-4">
+            <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
               {certifications.map((cert) => (
                 <div
                   key={cert.name}
@@ -142,27 +142,39 @@ export default function Education() {
                 >
                   <div className="flex items-center gap-3 min-w-0">
                     <div className="w-14 h-10 bg-white rounded flex items-center justify-center flex-shrink-0 p-1.5">
-                      <Image
-                        src={cert.logoUrl}
-                        alt={`${cert.issuer} logo`}
-                        width={80}
-                        height={40}
-                        className="w-full h-full object-contain"
-                      />
+                      {cert.logoUrl ? (
+                        <Image
+                          src={cert.logoUrl}
+                          alt={`${cert.issuer} logo`}
+                          width={80}
+                          height={40}
+                          className="w-full h-full object-contain"
+                        />
+                      ) : (
+                        <span className="font-serif font-bold text-charcoal text-sm">
+                          {cert.issuer.split(' ').map((w) => w[0]).join('').slice(0, 3)}
+                        </span>
+                      )}
                     </div>
                     <div className="min-w-0">
                       <div className="text-xs text-white/50 uppercase tracking-wider mb-0.5">{cert.issuer}</div>
                       <div className="text-white font-medium text-sm truncate">{cert.name}</div>
                     </div>
                   </div>
-                  <a
-                    href={cert.credentialUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="flex-shrink-0 px-3 py-1.5 bg-white/10 hover:bg-white/20 text-white text-xs font-semibold rounded-full transition-colors whitespace-nowrap"
-                  >
-                    View credential
-                  </a>
+                  {cert.inProgress ? (
+                    <span className="flex-shrink-0 px-3 py-1.5 bg-burnt-orange/20 text-burnt-orange text-xs font-semibold rounded-full whitespace-nowrap">
+                      In progress
+                    </span>
+                  ) : (
+                    <a
+                      href={cert.credentialUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex-shrink-0 px-3 py-1.5 bg-white/10 hover:bg-white/20 text-white text-xs font-semibold rounded-full transition-colors whitespace-nowrap"
+                    >
+                      View credential
+                    </a>
+                  )}
                 </div>
               ))}
             </div>

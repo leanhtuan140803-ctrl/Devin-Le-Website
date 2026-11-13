@@ -31,4 +31,9 @@ export const certifications = [
     logoUrl: '/images/logos/argus.png',
     credentialUrl: '/documents/argus-enterprise-certificate.jpg',
   },
+  {
+    name: 'A.CRE Accelerator',
+    issuer: 'Adventures in CRE',
+    inProgress: true,
+  },
 ];
